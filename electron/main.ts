@@ -29,6 +29,7 @@ let win: BrowserWindow | null
 function createWindow() {
   win = new BrowserWindow({
     title: "Bouleo",
+    icon: path.join(process.env.VITE_PUBLIC, 'images', 'icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },
