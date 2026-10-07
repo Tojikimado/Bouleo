@@ -10,13 +10,21 @@ function ScoreInput({
   return (
     <input
       type="text"
+      inputMode="numeric"
       value={value === null ? '' : String(value)}
       onChange={(event) => {
-        onChange(
-          event.target.value === ''
-            ? null
-            : Number(event.target.value),
-        )
+        const inputValue = event.target.value
+
+        if (inputValue === '') {
+          onChange(null)
+          return
+        }
+
+        if (!/^\d+$/.test(inputValue)) {
+          return
+        }
+
+        onChange(Number(inputValue))
       }}
     />
   )

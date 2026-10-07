@@ -1,18 +1,4 @@
 .app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.app h1 {
-  margin: 0;
-  font-size: 3rem;
-}
-
-.app p {
-  margin-top: 0.5rem;
-  font-size: 1.1rem;
+min-height: 100vh;
+width: 100%;
 }

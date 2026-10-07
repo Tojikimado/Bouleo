@@ -2,12 +2,34 @@
   font-family:
     Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  color: #1a1a1a;
-  background: #f5f5f5;
+
+  color: #172033;
+  background: #ebebeb;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --color-background: #ebebeb;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f5f5f5;
+
+  --color-primary: #1455a0;
+  --color-primary-hover: #104782;
+  --color-primary-light: #e8f0fa;
+
+  --color-text: #172033;
+  --color-text-muted: #64748b;
+
+  --color-border: #d8dce2;
+
+  --color-success: #2f9e5b;
+  --color-error: #d94b4b;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
 }
 
 * {
@@ -18,7 +40,6 @@ html,
 body,
 #root {
   width: 100%;
-  min-width: 320px;
-  min-height: 100vh;
+  min-height: 100%;
   margin: 0;
 }

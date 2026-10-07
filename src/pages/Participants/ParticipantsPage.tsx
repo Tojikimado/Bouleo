@@ -1,11 +1,13 @@
 import { useState } from 'react'
 
+import './ParticipantsPage.css'
+
 import type {
   ContestFormat,
   ContestMode,
-} from '../types/contest'
-import type { Player } from '../types/player'
-import type { Team } from '../types/team'
+} from '../../types/contest'
+import type { Player } from '../../types/player'
+import type { Team } from '../../types/team'
 
 interface ParticipantsPageProps {
   name: string
@@ -232,111 +234,154 @@ function ParticipantsPage({
     participantCount >= minimumParticipants &&
     allNamesFilled
 
-  return (
-    <main>
-      <button onClick={onBack}>
-        ← Retour
-      </button>
+    return (
+    <main className="participants-page">
+      <div className="participants-content">
+        <button
+          className="participants-back"
+          onClick={onBack}
+        >
+          ← Retour
+        </button>
 
-      <h1>Participants</h1>
+        <div className="participants-header">
+          <h1>Participants</h1>
 
-      <p>
-        {name} — {totalRounds} parties
-      </p>
+          <p>
+            {name} — {totalRounds} parties
+          </p>
+        </div>
 
-      {mode === 'fixed-teams' ? (
-        <>
-          {teams.map((team, teamIndex) => (
-            <div key={team.id}>
-              <h2>
-                Équipe {teamIndex + 1}
-              </h2>
+        {mode === 'fixed-teams' ? (
+          <>
+            <div
+              className={`participants-teams-container ${
+                teams.length >=
+                  (format === 'tete-a-tete'
+                    ? 13
+                    : format === 'doublette'
+                      ? 10
+                      : 7)
+                  ? 'is-scrollable'
+                  : ''
+              }`}
+            >
+          <div className="participants-grid">
+            {teams.map((team, teamIndex) => (
+              <div
+                className="team-card"
+                key={team.id}
+              >
+                <div className="team-card-header">
+                  <h2>
+                    Équipe {teamIndex + 1}
+                  </h2>
 
-              {team.players.map(
-                (player, playerIndex) => (
+                  {teams.length > 4 && (
+                    <button
+                      className="team-remove-button"
+                      onClick={() =>
+                        removeTeam(team.id)
+                      }
+                    >
+                      Supprimer
+                    </button>
+                  )}
+                </div>
+
+                <div className="team-card-players">
+                  {team.players.map(
+                    (player, playerIndex) => (
+                      <input
+                        key={playerIndex}
+                        type="text"
+                        value={player}
+                        onChange={(event) =>
+                          updateTeamPlayer(
+                            team.id,
+                            playerIndex,
+                            event.target.value,
+                          )
+                        }
+                        placeholder={
+                          teamSize === 1
+                            ? 'Nom du joueur'
+                            : `Joueur ${playerIndex + 1}`
+                        }
+                      />
+                    ),
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+            <button
+              className="participants-add-button"
+              onClick={addTeam}
+            >
+              + Nouvelle équipe
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="players-list">
+              {players.map((player, index) => (
+                <div
+                  className="player-row"
+                  key={index}
+                >
                   <input
-                    key={playerIndex}
                     type="text"
                     value={player}
                     onChange={(event) =>
-                      updateTeamPlayer(
-                        team.id,
-                        playerIndex,
+                      updatePlayer(
+                        index,
                         event.target.value,
                       )
                     }
-                    placeholder={
-                      teamSize === 1
-                        ? 'Nom du joueur'
-                        : `Joueur ${playerIndex + 1}`
-                    }
+                    placeholder="Nom du joueur"
                   />
-                ),
-              )}
 
-              {teams.length > 4 && (
-                <button
-                  onClick={() =>
-                    removeTeam(team.id)
-                  }
-                >
-                  Supprimer l'équipe
-                </button>
-              )}
+                  <button
+                    className="player-remove-button"
+                    onClick={() =>
+                      removePlayer(index)
+                    }
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
 
-          <button onClick={addTeam}>
-            + Nouvelle équipe
-          </button>
-        </>
-      ) : (
-        <>
-          {players.map((player, index) => (
-            <div key={index}>
-              <input
-                type="text"
-                value={player}
-                onChange={(event) =>
-                  updatePlayer(
-                    index,
-                    event.target.value,
-                  )
-                }
-                placeholder="Nom du joueur"
-              />
+            <button
+              className="participants-add-button"
+              onClick={addPlayer}
+            >
+              + Ajouter un joueur
+            </button>
+          </>
+        )}
 
-              <button
-                onClick={() =>
-                  removePlayer(index)
-                }
-              >
-                Supprimer
-              </button>
-            </div>
-          ))}
+        {!canContinue && (
+          <p className="participants-validation">
+            Minimum requis : {minimumParticipants}{' '}
+            {mode === 'fixed-teams'
+              ? 'équipes'
+              : 'joueurs'}
+          </p>
+        )}
 
-          <button onClick={addPlayer}>
-            + Ajouter un joueur
-          </button>
-        </>
-      )}
-
-      {!canContinue && (
-        <p>
-          Minimum requis : {minimumParticipants}{' '}
-          {mode === 'fixed-teams'
-            ? 'équipes'
-            : 'joueurs'}
-        </p>
-      )}
-
-      <button
-        onClick={handleContinue}
-        disabled={!canContinue}
-      >
-        Continuer →
-      </button>
+        <button
+          className="participants-continue"
+          onClick={handleContinue}
+          disabled={!canContinue}
+        >
+          Continuer →
+        </button>
+      </div>
     </main>
   )
 }

@@ -1,9 +1,12 @@
 import { useState } from 'react'
 
-import HomePage from './pages/HomePage'
-import NewContestPage from './pages/NewContestPage'
-import ParticipantsPage from './pages/ParticipantsPage'
-import ContestPage from './pages/ContestPage'
+import './App.css'
+
+import HomePage from './pages/Home/HomePage'
+import NewContestPage from './pages/NewContest/NewContestPage'
+import ParticipantsPage from './pages/Participants/ParticipantsPage'
+import ContestPage from './pages/Contest/ContestPage'
+import RankingPage from './pages/Ranking/RankingPage'
 
 import type {
   Contest,
@@ -20,6 +23,7 @@ type Page =
   | 'new-contest'
   | 'participants'
   | 'contest'
+  | 'ranking'
 
 function App() {
   const [page, setPage] =
@@ -117,8 +121,51 @@ function App() {
     })
   }
 
+  function handleNextRound() {
+    setContest((currentContest) => {
+      if (!currentContest) {
+        return currentContest
+      }
+
+      if (
+        currentContest.currentRound >=
+        currentContest.totalRounds
+      ) {
+        return currentContest
+      }
+
+      return {
+        ...currentContest,
+        currentRound:
+          currentContest.currentRound + 1,
+      }
+    })
+  }
+
+  function handlePreviousRound() {
+    setContest((currentContest) => {
+      if (!currentContest) {
+        return currentContest
+      }
+
+      if (currentContest.currentRound <= 1) {
+        return currentContest
+      }
+
+      return {
+        ...currentContest,
+        currentRound:
+          currentContest.currentRound - 1,
+      }
+    })
+  }
+
+  function handleShowRanking() {
+    setPage('ranking')
+  }
+
   return (
-    <>
+    <div className="app">
       {page === 'new-contest' && (
         <NewContestPage
           onBack={() => setPage('home')}
@@ -148,6 +195,17 @@ function App() {
             setPage('participants')
           }
           onScoreChange={handleScoreChange}
+          onNextRound={handleNextRound}
+          onPreviousRound={handlePreviousRound}
+          onShowRanking={handleShowRanking}
+        />
+      )}
+
+      {page === 'ranking' && contest && (
+        <RankingPage
+          contest={contest}
+          onBack={() => setPage('contest')}
+          onBackHome={() => setPage('home')}
         />
       )}
 
@@ -156,7 +214,7 @@ function App() {
           onNewContest={handleNewContest}
         />
       )}
-    </>
+    </div>
   )
 }
 
