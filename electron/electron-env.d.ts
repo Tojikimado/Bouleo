@@ -21,7 +21,27 @@ declare namespace NodeJS {
   }
 }
 
-// Used in Renderer process, expose in `preload.ts`
 interface Window {
-  ipcRenderer: import('electron').IpcRenderer
+  bouleo: {
+    saveContest(
+      contest: import('../src/types/contest').Contest,
+    ): Promise<boolean>
+
+    listContests(): Promise<
+      {
+        id: string
+        name: string
+        totalRounds: number
+        format: import('../src/types/contest').ContestFormat
+        mode: import('../src/types/contest').ContestMode
+        savedAt: string
+      }[]
+    >
+
+    loadContest(
+      contestId: string,
+    ): Promise<
+      import('../src/types/contest').Contest
+    >
+  }
 }

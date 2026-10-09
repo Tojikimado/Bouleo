@@ -1,0 +1,147 @@
+.open-contest-page {
+  min-height: 100vh;
+  padding: 48px 32px;
+}
+
+.open-contest-content {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.open-contest-back {
+  padding: 8px 0;
+  margin-bottom: 24px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.open-contest-back:hover {
+  color: var(--color-primary);
+}
+
+.open-contest-header {
+  margin-bottom: 36px;
+}
+
+.open-contest-header h1 {
+  margin: 0 0 8px;
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.open-contest-header p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+.open-contest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 560px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.open-contest-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.open-contest-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 6%);
+}
+
+.open-contest-card-content {
+  min-width: 0;
+}
+
+.open-contest-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.open-contest-details {
+  margin: 0 0 6px;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.open-contest-date {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.open-contest-button {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.open-contest-button:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+.open-contest-button:active {
+  transform: translateY(0);
+}
+
+.open-contest-empty {
+  padding: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.open-contest-empty p {
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .open-contest-page {
+    padding: 32px 20px;
+  }
+
+  .open-contest-header h1 {
+    font-size: 2.2rem;
+  }
+
+  .open-contest-card {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .open-contest-button {
+    width: 100%;
+  }
+}

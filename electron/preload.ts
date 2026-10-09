@@ -1,24 +1,27 @@
 import { ipcRenderer, contextBridge } from 'electron'
+import type { Contest } from '../src/types/contest'
 
-// --------- Expose some API to the Renderer process ---------
-contextBridge.exposeInMainWorld('ipcRenderer', {
-  on(...args: Parameters<typeof ipcRenderer.on>) {
-    const [channel, listener] = args
-    return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
-  },
-  off(...args: Parameters<typeof ipcRenderer.off>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.off(channel, ...omit)
-  },
-  send(...args: Parameters<typeof ipcRenderer.send>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.send(channel, ...omit)
-  },
-  invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.invoke(channel, ...omit)
-  },
+contextBridge.exposeInMainWorld(
+  'bouleo',
+  {
+    saveContest(contest: Contest) {
+      return ipcRenderer.invoke(
+        'save-contest',
+        contest,
+      )
+    },
 
-  // You can expose other APTs you need here.
-  // ...
-})
+    listContests() {
+      return ipcRenderer.invoke(
+        'list-contests',
+      )
+    },
+
+    loadContest(contestId: string) {
+      return ipcRenderer.invoke(
+        'load-contest',
+        contestId,
+      )
+    },
+  },
+)

@@ -2,10 +2,12 @@ import './HomePage.css'
 
 interface HomePageProps {
   onNewContest: () => void
+  onOpenContest: () => void
 }
 
 function HomePage({
   onNewContest,
+  onOpenContest
 }: HomePageProps) {
   return (
     <main className="home-page">
@@ -34,6 +36,7 @@ function HomePage({
           <button
             className="home-secondary-button"
             type="button"
+            onClick={onOpenContest}
           >
             Ouvrir un concours
           </button>

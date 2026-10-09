@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import './App.css'
 
@@ -7,6 +7,7 @@ import NewContestPage from './pages/NewContest/NewContestPage'
 import ParticipantsPage from './pages/Participants/ParticipantsPage'
 import ContestPage from './pages/Contest/ContestPage'
 import RankingPage from './pages/Ranking/RankingPage'
+import OpenContestPage from './pages/OpenContest/OpenContestPage'
 
 import type {
   Contest,
@@ -24,6 +25,7 @@ type Page =
   | 'participants'
   | 'contest'
   | 'ranking'
+  | 'open-contest'
 
 function App() {
   const [page, setPage] =
@@ -43,6 +45,14 @@ function App() {
 
   const [contest, setContest] =
     useState<Contest | null>(null)
+
+  useEffect(() => {
+    if (!contest) {
+      return
+    }
+
+    void window.bouleo.saveContest(contest)
+  }, [contest])
 
   function handleNewContest() {
     setPage('new-contest')
@@ -212,6 +222,19 @@ function App() {
       {page === 'home' && (
         <HomePage
           onNewContest={handleNewContest}
+          onOpenContest={() =>
+            setPage('open-contest')
+          }
+        />
+      )}
+
+      {page === 'open-contest' && (
+        <OpenContestPage
+          onBack={() => setPage('home')}
+          onOpenContest={(loadedContest) => {
+      setContest(loadedContest)
+      setPage('contest')
+    }}
         />
       )}
     </div>
