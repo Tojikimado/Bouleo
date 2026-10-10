@@ -243,4 +243,31 @@ ipcMain.handle(
   },
 )
 
+
+ipcMain.handle(
+  'delete-contest',
+  async (_event, contestId: unknown) => {
+    if (
+      typeof contestId !== 'string' ||
+      !/^[a-zA-Z0-9_-]+$/.test(contestId)
+    ) {
+      throw new Error(
+        'Identifiant de concours invalide.',
+      )
+    }
+
+    // Attendre une éventuelle sauvegarde en cours.
+    await saveQueues.get(contestId)?.catch(() => {})
+
+    const filePath = path.join(
+      contestsDirectory,
+      `${contestId}.json`,
+    )
+
+    await fs.unlink(filePath)
+
+    return true
+  },
+)
+
 app.whenReady().then(createWindow)

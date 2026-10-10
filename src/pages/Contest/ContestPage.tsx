@@ -1,222 +1,206 @@
 import type { Contest } from '../../types/contest'
-
 import './ContestPage.css'
-
 import ScoreInput from '../../components/ScoreInput'
 
 interface ContestPageProps {
-  contest: Contest
-  onBack: () => void
-  onScoreChange: (
-    roundId: string,
-    matchId: string,
-    team: 'A' | 'B',
-    score: number | null,
-  ) => void
-  onNextRound: () => void
-  onPreviousRound: () => void
-  onShowRanking: () => void
+contest: Contest
+onBack: () => void
+onScoreChange: (
+roundId: string,
+matchId: string,
+team: 'A' | 'B',
+score: number | null,
+) => void
+onNextRound: () => void
+onPreviousRound: () => void
+onShowRanking: () => void
 }
 
 function ContestPage({
-  contest,
-  onBack,
-  onScoreChange,
-  onNextRound,
-  onPreviousRound,
-  onShowRanking,
+contest,
+onBack,
+onScoreChange,
+onNextRound,
+onPreviousRound,
+onShowRanking,
 }: ContestPageProps) {
-  const currentRound = contest.rounds.find(
-    (round) => round.number === contest.currentRound,
-  )
+const currentRound = contest.rounds.find(
+(round) => round.number === contest.currentRound,
+)
 
-  if (!currentRound) {
-    return (
-      <main>
-        <button onClick={onBack}>
-          ← Retour
-        </button>
+if (!currentRound) {
+return ( <main> <button onClick={onBack}>← Retour</button> <p>Partie introuvable.</p> </main>
+)
+}
 
-        <p>Partie introuvable.</p>
-      </main>
-    )
-  }
+function isValidMatch(
+scoreA: number | null,
+scoreB: number | null,
+): boolean {
+if (scoreA === null || scoreB === null) {
+return false
+}
 
-  function isValidMatch(
-    scoreA: number | null,
-    scoreB: number | null,
-  ): boolean {
-    if (scoreA === null || scoreB === null) {
-      return false
-    }
+return (
+  (scoreA === 13 && scoreB < 13) ||
+  (scoreB === 13 && scoreA < 13)
+)
 
-    return (
-      (scoreA === 13 && scoreB < 13) ||
-      (scoreB === 13 && scoreA < 13)
-    )
-  }
+}
 
-  const canGoNext = currentRound.matches.every(
-    (match) =>
-      isValidMatch(
-        match.scoreA,
-        match.scoreB,
-      ),
-  )
+const canGoNext = currentRound.matches.every((match) =>
+match.isBye || match.teamB === null
+? match.scoreA === 13 && match.scoreB === 7
+: isValidMatch(match.scoreA, match.scoreB),
+)
 
-  const isFirstRound =
-    contest.currentRound === 1
+const isFirstRound = contest.currentRound === 1
+const isLastRound = contest.currentRound === contest.totalRounds
 
-  const isLastRound =
-    contest.currentRound === contest.totalRounds
+return ( <main className="contest-page"> <div className="contest-content"> <button className="contest-back" onClick={onBack}>
+← Retour </button>
 
-  return (
-  <main className="contest-page">
-    <div className="contest-content">
-      <button
-        className="contest-back"
-        onClick={onBack}
-      >
-        ← Retour
-      </button>
+    <div className="contest-header">
+      <h1>{contest.name}</h1>
 
-      <div className="contest-header">
-        <h1>{contest.name}</h1>
+      <h2>
+        Partie {contest.currentRound}
+        <span> / {contest.totalRounds}</span>
+      </h2>
+    </div>
 
-        <h2>
-          Partie {contest.currentRound}
-          <span>
-            {' '}
-            / {contest.totalRounds}
-          </span>
-        </h2>
-      </div>
+    <div className="contest-matches">
+      {currentRound.matches.map((match, matchIndex) => {
+        const isBye =
+          match.isBye === true || match.teamB === null
 
-      <div className="contest-matches">
-        {currentRound.matches.map(
-          (match, matchIndex) => {
-            const validMatch = isValidMatch(
-              match.scoreA,
-              match.scoreB,
-            )
+        const validMatch = isBye
+          ? match.scoreA === 13 && match.scoreB === 7
+          : isValidMatch(match.scoreA, match.scoreB)
 
-            return (
-              <div
-                className="match-card"
-                key={match.id}
-              >
-                <div className="match-header">
-                  <h3>
-                    Match {matchIndex + 1}
-                  </h3>
-                </div>
+        const teamAName = match.teamA.players
+          .map((player) => player.name)
+          .join(' / ')
 
-                <div className="match-teams">
-                  <div className="match-team">
-                    <span className="match-team-name">
-                      {match.teamA.players
-                        .map(
-                          (player) =>
-                            player.name,
-                        )
-                        .join(' + ')}
-                    </span>
+        const teamBName =
+          match.teamB?.players
+            .map((player) => player.name)
+            .join(' / ') ?? ''
 
-                    <ScoreInput
-                      value={match.scoreA}
-                      onChange={(score) =>
-                        onScoreChange(
-                          currentRound.id,
-                          match.id,
-                          'A',
-                          score,
-                        )
-                      }
-                    />
-                  </div>
+        return (
+          <div className="match-card" key={match.id}>
+            <div className="match-header">
+              <h3>
+                {`Match ${matchIndex + 1}`}
+              </h3>
+            </div>
 
-                  <span className="match-separator">
-                    -
-                  </span>
+            <div className="match-teams">
+              <div className="match-team">
+                <span className="match-team-name">
+                  {teamAName || 'Participants'}
+                </span>
 
-                  <div className="match-team">
-                    <ScoreInput
-                      value={match.scoreB}
-                      onChange={(score) =>
-                        onScoreChange(
-                          currentRound.id,
-                          match.id,
-                          'B',
-                          score,
-                        )
-                      }
-                    />
-
-                    <span className="match-team-name">
-                      {match.teamB.players
-                        .map(
-                          (player) =>
-                            player.name,
-                        )
-                        .join(' + ')}
-                    </span>
-                  </div>
-                </div>
-
-                {!validMatch &&
-                  (match.scoreA !== null ||
-                    match.scoreB !== null) && (
-                    <p className="match-error">
-                      Partie invalide : un des
-                      deux scores doit être égal
-                      à 13.
-                    </p>
-                  )}
+                {isBye ? (
+                  <span className="match-bye-score">13</span>
+                ) : (
+                  <ScoreInput
+                    value={match.scoreA}
+                    onChange={(score) =>
+                      onScoreChange(
+                        currentRound.id,
+                        match.id,
+                        'A',
+                        score,
+                      )
+                    }
+                  />
+                )}
               </div>
-            )
-          },
-        )}
-      </div>
 
-      {!canGoNext && (
-        <p className="contest-validation">
-          Terminez toutes les parties avec un
-          score valide avant de continuer.
-        </p>
+              <span className="match-separator">-</span>
+
+              <div className="match-team">
+                {isBye ? (
+                  <span className="match-bye-score">7</span>
+                ) : (
+                  <ScoreInput
+                    value={match.scoreB}
+                    onChange={(score) =>
+                      onScoreChange(
+                        currentRound.id,
+                        match.id,
+                        'B',
+                        score,
+                      )
+                    }
+                  />
+                )}
+
+                <span className="match-team-name">
+                  {isBye ? 'X' : teamBName}
+                </span>
+              </div>
+            </div>
+
+            {isBye && (
+              <p className="match-bye-message">
+                Victoire attribuée automatiquement.
+              </p>
+            )}
+
+            {!isBye &&
+              !validMatch &&
+              (match.scoreA !== null ||
+                match.scoreB !== null) && (
+                <p className="match-error">
+                  Partie invalide : un des deux scores doit être égal à 13.
+                </p>
+              )}
+          </div>
+        )
+      })}
+    </div>
+
+    {!canGoNext && (
+      <p className="contest-validation">
+        Terminez toutes les parties avec un score valide avant de continuer.
+      </p>
+    )}
+
+    <div className="contest-navigation">
+      {!isFirstRound && (
+        <button
+          className="contest-secondary-button"
+          onClick={onPreviousRound}
+        >
+          ← Partie {contest.currentRound - 1}
+        </button>
       )}
 
-      <div className="contest-navigation">
-        {!isFirstRound && (
-          <button
-            className="contest-secondary-button"
-            onClick={onPreviousRound}
-          >
-            ← Partie {contest.currentRound - 1}
-          </button>
-        )}
+      {!isLastRound && (
+        <button
+          className="contest-primary-button"
+          onClick={onNextRound}
+          disabled={!canGoNext}
+        >
+          Suivant →
+        </button>
+      )}
 
-        {!isLastRound && (
-          <button
-            className="contest-primary-button"
-            onClick={onNextRound}
-            disabled={!canGoNext}
-          >
-            Suivant →
-          </button>
-        )}
-
-        {isLastRound && (
-          <button
-            className="contest-primary-button"
-            onClick={onShowRanking}
-            disabled={!canGoNext}
-          >
-            Voir le classement →
-          </button>
-        )}
-      </div>
+      {isLastRound && (
+        <button
+          className="contest-primary-button"
+          onClick={onShowRanking}
+          disabled={!canGoNext}
+        >
+          Voir le classement →
+        </button>
+      )}
     </div>
-  </main>
+  </div>
+</main>
+
 )
 }
 

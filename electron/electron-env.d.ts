@@ -43,5 +43,10 @@ interface Window {
     ): Promise<
       import('../src/types/contest').Contest
     >
+
+    
+    deleteContest(
+      contestId: string,
+    ): Promise<boolean>
   }
 }

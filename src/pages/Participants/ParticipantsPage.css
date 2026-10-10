@@ -146,6 +146,12 @@
   gap: 10px;
 }
 
+.players-list.is-scrollable {
+  max-height: 560px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
 .player-row {
   display: flex;
   align-items: center;

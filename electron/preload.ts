@@ -23,5 +23,13 @@ contextBridge.exposeInMainWorld(
         contestId,
       )
     },
+
+    
+    deleteContest(contestId: string) {
+      return ipcRenderer.invoke(
+        'delete-contest',
+        contestId,
+      )
+    },
   },
 )

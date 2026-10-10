@@ -2,12 +2,10 @@ import { useState } from 'react'
 
 import './NewContestPage.css'
 
-import type {
-  ContestFormat,
-  ContestMode,
-} from '../../types/contest'
+import type { Contest, ContestFormat, ContestMode } from '../../types/contest'
 
 interface NewContestPageProps {
+  contest: Contest | null
   onBack: () => void
   onContinue: (
     name: string,
@@ -18,17 +16,26 @@ interface NewContestPageProps {
 }
 
 function NewContestPage({
+  contest,
   onBack,
   onContinue,
 }: NewContestPageProps) {
-  const [name, setName] = useState('')
-  const [totalRounds, setTotalRounds] = useState(6)
+  const [name, setName] = useState(
+    contest?.name ?? '',
+  )
+
+  const [totalRounds, setTotalRounds] =
+    useState(contest?.totalRounds ?? 4)
 
   const [format, setFormat] =
-    useState<ContestFormat>('tete-a-tete')
+    useState<ContestFormat>(
+      contest?.format ?? 'tete-a-tete',
+    )
 
   const [mode, setMode] =
-    useState<ContestMode>('fixed-teams')
+    useState<ContestMode>(
+      contest?.mode ?? 'fixed-teams',
+    )
 
   function handleContinue() {
     if (!name.trim()) {
@@ -68,7 +75,7 @@ function NewContestPage({
               onChange={(event) =>
                 setName(event.target.value)
               }
-              placeholder="Ex. Concours du samedi"
+              placeholder="Ex. Concours 09/10/2026"
             />
           </div>
 

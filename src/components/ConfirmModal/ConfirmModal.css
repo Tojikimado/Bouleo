@@ -1,0 +1,153 @@
+.confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background: rgba(0, 0, 0, 0.55);
+
+  animation: confirm-modal-overlay-in 0.2s ease;
+}
+
+.confirm-modal {
+  width: 100%;
+  max-width: 440px;
+
+  padding: 28px;
+
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+
+  background: var(--color-surface);
+  color: var(--color-text);
+
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+
+  animation: confirm-modal-in 0.2s ease;
+}
+
+.confirm-modal-icon {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 18px;
+
+  border-radius: 50%;
+
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.confirm-modal h2 {
+  margin: 0 0 10px;
+
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.confirm-modal p {
+  margin: 0;
+
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+
+  margin-top: 28px;
+}
+
+.confirm-modal-cancel,
+.confirm-modal-confirm {
+  min-height: 44px;
+
+  padding: 0 18px;
+
+  border-radius: var(--radius-md);
+
+  font-size: 0.95rem;
+  font-weight: 600;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.confirm-modal-cancel {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.confirm-modal-cancel:hover {
+  background: var(--color-surface-hover);
+}
+
+.confirm-modal-confirm {
+  border: 0;
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.confirm-modal-confirm:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+.confirm-modal-confirm:active {
+  transform: translateY(0);
+}
+
+@keyframes confirm-modal-overlay-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes confirm-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 500px) {
+  .confirm-modal {
+    padding: 24px;
+  }
+
+  .confirm-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .confirm-modal-cancel,
+  .confirm-modal-confirm {
+    width: 100%;
+  }
+}

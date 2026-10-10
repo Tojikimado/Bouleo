@@ -1,64 +1,62 @@
 import type { Team } from '../types/team'
 
 function shuffle<T>(array: T[]): T[] {
-  const result = [...array]
+const result = [...array]
 
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
+for (let i = result.length - 1; i > 0; i--) {
+const j = Math.floor(Math.random() * (i + 1))
+;[result[i], result[j]] = [result[j], result[i]]
+}
 
-    ;[result[i], result[j]] = [result[j], result[i]]
-  }
-
-  return result
+return result
 }
 
 export function generateFixedTeams(
-  teams: Team[],
-  numberOfRounds: number,
+teams: Team[],
+numberOfRounds: number,
 ): Team[][] {
-  if (teams.length < 4) {
-    throw new Error('Il faut au moins 4 équipes.')
-  }
+if (teams.length < 4) {
+throw new Error('Il faut au moins 4 équipes.')
+}
 
-  if (teams.length % 2 !== 0) {
-    throw new Error(
-      'Le nombre d’équipes doit être pair pour générer les parties.',
-    )
-  }
+if (numberOfRounds < 1) {
+throw new Error('Il faut au moins une partie.')
+}
 
-  if (numberOfRounds < 1) {
-    throw new Error('Il faut au moins une partie.')
-  }
+const shuffledTeams = shuffle(teams)
+const hasBye = shuffledTeams.length % 2 !== 0
 
-  const shuffledTeams = shuffle(teams)
+const byeTeam: Team = {
+id: '**bye**',
+players: [],
+}
 
-  const fixedTeam = shuffledTeams[0]
-  const rotatingTeams = shuffledTeams.slice(1)
+const rotatingTeams = hasBye
+? [...shuffledTeams, byeTeam]
+: [...shuffledTeams]
 
-  const rounds: Team[][] = []
+const rounds: Team[][] = []
+const rotationSize = rotatingTeams.length
 
-  const uniqueRounds = teams.length - 1
+for (let roundNumber = 0; roundNumber < numberOfRounds; roundNumber++) {
+const currentTeams = [...rotatingTeams]
 
-  for (let roundNumber = 0; roundNumber < numberOfRounds; roundNumber++) {
-    const currentRotation = [...rotatingTeams]
+for (let i = 0; i < roundNumber % (rotationSize - 1); i++) {
+  currentTeams.splice(1, 0, currentTeams.pop()!)
+}
 
-    for (let i = 0; i < roundNumber % uniqueRounds; i++) {
-      currentRotation.push(currentRotation.shift()!)
-    }
+const roundTeams: Team[] = []
 
-    const currentTeams = [fixedTeam, ...currentRotation]
+for (let i = 0; i < rotationSize / 2; i++) {
+  const teamA = currentTeams[i]
+  const teamB = currentTeams[rotationSize - 1 - i]
 
-    const roundTeams: Team[] = []
+  roundTeams.push(teamA, teamB)
+}
 
-    for (let i = 0; i < currentTeams.length / 2; i++) {
-      roundTeams.push(currentTeams[i])
-      roundTeams.push(
-        currentTeams[currentTeams.length - 1 - i],
-      )
-    }
+rounds.push(roundTeams)
 
-    rounds.push(roundTeams)
-  }
+}
 
-  return rounds
+return rounds
 }

@@ -56,7 +56,7 @@ export function createContest(
 
     const teamsByRound = generateMeleeTeams(
       players,
-      teamSize === 1 ? 2 : teamSize,
+      teamSize,
       totalRounds,
     )
 

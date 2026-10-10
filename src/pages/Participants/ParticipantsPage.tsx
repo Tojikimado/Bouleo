@@ -2,14 +2,12 @@ import { useState } from 'react'
 
 import './ParticipantsPage.css'
 
-import type {
-  ContestFormat,
-  ContestMode,
-} from '../../types/contest'
+import type { Contest, ContestFormat, ContestMode } from '../../types/contest'
 import type { Player } from '../../types/player'
 import type { Team } from '../../types/team'
 
 interface ParticipantsPageProps {
+  contest: Contest | null
   name: string
   totalRounds: number
   format: ContestFormat
@@ -62,6 +60,7 @@ function getMinimumParticipants(
 }
 
 function ParticipantsPage({
+  contest,
   name,
   totalRounds,
   format,
@@ -74,27 +73,40 @@ function ParticipantsPage({
   const minimumParticipants =
     getMinimumParticipants(format, mode)
 
-  const [teams, setTeams] = useState<TeamInput[]>([
-    {
-      id: crypto.randomUUID(),
-      players: Array(teamSize).fill(''),
-    },
-    {
-      id: crypto.randomUUID(),
-      players: Array(teamSize).fill(''),
-    },
-    {
-      id: crypto.randomUUID(),
-      players: Array(teamSize).fill(''),
-    },
-    {
-      id: crypto.randomUUID(),
-      players: Array(teamSize).fill(''),
-    },
-  ])
+  const [teams, setTeams] = useState<TeamInput[]>(
+    contest?.teams.length
+      ? contest.teams.map((team) => ({
+          id: team.id,
+          players: Array.from(
+            { length: teamSize },
+            (_, index) =>
+              team.players[index]?.name ?? '',
+          ),
+        }))
+      : [
+          {
+            id: crypto.randomUUID(),
+            players: Array(teamSize).fill(''),
+          },
+          {
+            id: crypto.randomUUID(),
+            players: Array(teamSize).fill(''),
+          },
+          {
+            id: crypto.randomUUID(),
+            players: Array(teamSize).fill(''),
+          },
+          {
+            id: crypto.randomUUID(),
+            players: Array(teamSize).fill(''),
+          },
+        ],
+  )
 
   const [players, setPlayers] = useState<string[]>(
-    [],
+    contest?.players.map(
+      (player) => player.name,
+    ) ?? [],
   )
 
   function addTeam() {
@@ -179,9 +191,22 @@ function ParticipantsPage({
       for (const inputTeam of teams) {
         const teamPlayers: Player[] = []
 
-        for (const playerName of inputTeam.players) {
+        const existingTeam = contest?.teams.find(
+          (team) => team.id === inputTeam.id,
+        )
+
+        for (
+          let playerIndex = 0;
+          playerIndex < inputTeam.players.length;
+          playerIndex++
+        ) {
+          const playerName = inputTeam.players[playerIndex]
+
+          const existingPlayer =
+            existingTeam?.players[playerIndex]
+
           const player: Player = {
-            id: crypto.randomUUID(),
+            id: existingPlayer?.id ?? crypto.randomUUID(),
             name: playerName.trim(),
           }
 
@@ -204,8 +229,10 @@ function ParticipantsPage({
     }
 
     const resultPlayers: Player[] =
-      players.map((playerName) => ({
-        id: crypto.randomUUID(),
+      players.map((playerName, index) => ({
+        id:
+          contest?.players[index]?.id ??
+          crypto.randomUUID(),
         name: playerName.trim(),
       }))
 
@@ -326,7 +353,11 @@ function ParticipantsPage({
           </>
         ) : (
           <>
-            <div className="players-list">
+            <div
+              className={`players-list ${
+                players.length >= 8 ? 'is-scrollable' : ''
+              }`}
+            >
               {players.map((player, index) => (
                 <div
                   className="player-row"
