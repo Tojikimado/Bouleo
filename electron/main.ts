@@ -1,273 +1,133 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
-import { createRequire } from 'node:module'
+﻿import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import fs from 'node:fs/promises'
+import { ContestStore } from './contestStore'
 
-const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const appRoot = path.join(__dirname, '..')
+const devServerUrl = process.env.VITE_DEV_SERVER_URL
+const rendererDirectory = path.join(appRoot, 'dist')
+const publicDirectory = devServerUrl ? path.join(appRoot, 'public') : rendererDirectory
 
-// The built directory structure
-//
-// ├─┬─┬ dist
-// │ │ └── index.html
-// │ │
-// │ ├─┬ dist-electron
-// │ │ ├── main.js
-// │ │ └── preload.mjs
-// │
-process.env.APP_ROOT = path.join(__dirname, '..')
+const store = new ContestStore(path.join(app.getPath('userData'), 'contests'))
+let win: BrowserWindow | null = null
+let closeAllowed = false
+let rendererReady = false
+let closeToken: string | null = null
+let closeTimer: ReturnType<typeof setTimeout> | undefined
 
-// 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
-export const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
-export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron')
-export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
-
-process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
-
-interface SavedContest {
-  version: 1
-  savedAt: string
-  contest: import('../src/types/contest').Contest
+async function closeFailed(message: string) {
+  if (!win || win.isDestroyed()) return
+  if (closeTimer) clearTimeout(closeTimer)
+  closeToken = null
+  win.setEnabled(true)
+  const result = await dialog.showMessageBox(win, {
+    type: 'warning',
+    title: 'Sauvegarde de Bouleo',
+    message,
+    detail:
+      'Vous pouvez rester dans Bouleo et réessayer. Quitter maintenant peut perdre les dernières modifications.',
+    buttons: ['Rester dans Bouleo', 'Quitter sans enregistrer'],
+    defaultId: 0,
+    cancelId: 0,
+  })
+  if (result.response === 1) {
+    closeAllowed = true
+    win.close()
+  }
 }
-
-interface ContestSummary {
-  id: string
-  name: string
-  totalRounds: number
-  format: import('../src/types/contest').ContestFormat
-  mode: import('../src/types/contest').ContestMode
-  savedAt: string
-}
-
-const contestsDirectory = path.join(
-  app.getPath('userData'),
-  'contests',
-)
-
-let win: BrowserWindow | null
 
 function createWindow() {
   win = new BrowserWindow({
     title: 'Bouleo',
-    icon: path.join(
-      process.env.VITE_PUBLIC,
-      'images',
-      'icon.ico',
-    ),
+    icon: path.join(publicDirectory, 'images', 'icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
     },
   })
-
   win.maximize()
-
-  // Test active push message to Renderer-process.
-  win.webContents.on('did-finish-load', () => {
-    win?.webContents.send('main-process-message', (new Date).toLocaleString())
+  win.on('close', (event) => {
+    if (closeAllowed) return
+    event.preventDefault()
+    if (closeToken) return
+    if (!rendererReady || win!.webContents.isCrashed()) {
+      void closeFailed('L’interface ne peut pas confirmer la sauvegarde.')
+      return
+    }
+    closeToken = randomUUID()
+    win!.setEnabled(false)
+    win!.webContents.send('prepare-close', closeToken)
+    closeTimer = setTimeout(() => {
+      void closeFailed('La sauvegarde ne répond pas.')
+    }, 30000)
   })
-
-  if (VITE_DEV_SERVER_URL) {
-    win.loadURL(VITE_DEV_SERVER_URL)
-  } else {
-    // win.loadFile('dist/index.html')
-    win.loadFile(path.join(RENDERER_DIST, 'index.html'))
-  }
+  win.on('closed', () => {
+    win = null
+    rendererReady = false
+  })
+  if (devServerUrl) void win.loadURL(devServerUrl)
+  else void win.loadFile(path.join(rendererDirectory, 'index.html'))
 }
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-    win = null
-  }
-})
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (win) {
+      if (win.isMinimized()) win.restore()
+      win.show()
+      win.focus()
+    }
+  })
+  app.on('before-quit', (event) => {
+    if (win && !closeAllowed) {
+      event.preventDefault()
+      win.close()
+    }
+  })
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit()
+  })
+  app.on('activate', () => {
+    if (!win) {
+      closeAllowed = false
+      createWindow()
+    }
+  })
 
-app.on('activate', () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
-})
-
-const saveQueues = new Map<
-  string,
-  Promise<void>
->()
-
-ipcMain.handle(
-  'save-contest',
-  async (_event, contest) => {
-    const previousSave =
-      saveQueues.get(contest.id) ??
-      Promise.resolve()
-
-    const currentSave =
-      previousSave
-        .catch(() => {})
-        .then(async () => {
-          const savedContest: SavedContest = {
-            version: 1,
-            savedAt: new Date().toISOString(),
-            contest,
-          }
-
-          await fs.mkdir(
-            contestsDirectory,
-            { recursive: true },
-          )
-
-          const filePath = path.join(
-            contestsDirectory,
-            `${contest.id}.json`,
-          )
-
-          const tempFilePath = `${filePath}.tmp`
-
-          const json = JSON.stringify(
-            savedContest,
-            null,
-            2,
-          )
-
-          await fs.writeFile(
-            tempFilePath,
-            json,
-            'utf-8',
-          )
-
-          await fs.rename(
-            tempFilePath,
-            filePath,
-          )
-        })
-
-    saveQueues.set(
-      contest.id,
-      currentSave,
-    )
-
+  ipcMain.on('renderer-ready', (event) => {
+    if (event.sender === win?.webContents) rendererReady = true
+  })
+  ipcMain.on('finish-close', async (event, token: unknown, success: unknown) => {
+    if (event.sender !== win?.webContents || token !== closeToken || !closeToken) return
+    if (closeTimer) clearTimeout(closeTimer)
     try {
-      await currentSave
-      return true
-    } finally {
-      if (
-        saveQueues.get(contest.id) ===
-        currentSave
-      ) {
-        saveQueues.delete(contest.id)
-      }
+      if (success !== true) throw new Error('Des modifications ne sont pas enregistrées.')
+      await store.flush()
+      closeAllowed = true
+      win?.close()
+    } catch {
+      await closeFailed('Impossible d’enregistrer toutes les modifications.')
     }
-  },
-)
-
-ipcMain.handle(
-  'list-contests',
-  async () => {
-    await fs.mkdir(
-      contestsDirectory,
-      { recursive: true },
-    )
-
-    const files = await fs.readdir(
-      contestsDirectory,
-      { withFileTypes: true },
-    )
-
-    const contests: ContestSummary[] = []
-
-    for (const file of files) {
-      if (
-        !file.isFile() ||
-        !file.name.endsWith('.json')
-      ) {
-        continue
-      }
-
-      const filePath = path.join(
-        contestsDirectory,
-        file.name,
-      )
-
-      try {
-        const content =
-          await fs.readFile(
-            filePath,
-            'utf-8',
-          )
-
-        const savedContest =
-          JSON.parse(content) as SavedContest
-
-        contests.push({
-          id: savedContest.contest.id,
-          name: savedContest.contest.name,
-          totalRounds: savedContest.contest.totalRounds,
-          format: savedContest.contest.format,
-          mode: savedContest.contest.mode,
-          savedAt: savedContest.savedAt,
-        })
-      } catch (error) {
-        console.error(
-          `Impossible de lire le concours ${file.name}:`,
-          error,
-        )
-      }
-    }
-
-    return contests
-  },
-)
-
-ipcMain.handle(
-  'load-contest',
-  async (_event, contestId) => {
-    const filePath = path.join(
-      contestsDirectory,
-      `${contestId}.json`,
-    )
-
-    const content =
-      await fs.readFile(
-        filePath,
-        'utf-8',
-      )
-
-    const savedContest =
-      JSON.parse(content) as SavedContest
-
-    return savedContest.contest
-  },
-)
-
-
-ipcMain.handle(
-  'delete-contest',
-  async (_event, contestId: unknown) => {
-    if (
-      typeof contestId !== 'string' ||
-      !/^[a-zA-Z0-9_-]+$/.test(contestId)
-    ) {
-      throw new Error(
-        'Identifiant de concours invalide.',
-      )
-    }
-
-    // Attendre une éventuelle sauvegarde en cours.
-    await saveQueues.get(contestId)?.catch(() => {})
-
-    const filePath = path.join(
-      contestsDirectory,
-      `${contestId}.json`,
-    )
-
-    await fs.unlink(filePath)
-
-    return true
-  },
-)
-
-app.whenReady().then(createWindow)
+  })
+  ipcMain.handle('save-contest', (event, contest: unknown) => {
+    if (event.sender !== win?.webContents) throw new Error('Fenêtre non autorisée.')
+    return store.save(contest)
+  })
+  ipcMain.handle('load-contest', (event, id: unknown) => {
+    if (event.sender !== win?.webContents) throw new Error('Fenêtre non autorisée.')
+    return store.load(id)
+  })
+  ipcMain.handle('delete-contest', (event, id: unknown) => {
+    if (event.sender !== win?.webContents) throw new Error('Fenêtre non autorisée.')
+    return store.delete(id)
+  })
+  ipcMain.handle('list-contests', (event) => {
+    if (event.sender !== win?.webContents) throw new Error('Fenêtre non autorisée.')
+    return store.list()
+  })
+  void app.whenReady().then(createWindow)
+}

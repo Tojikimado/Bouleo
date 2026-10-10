@@ -1,12 +1,11 @@
+import { isScore } from '../utils/contestRules'
+
 interface ScoreInputProps {
   value: number | null
   onChange: (value: number | null) => void
 }
 
-function ScoreInput({
-  value,
-  onChange,
-}: ScoreInputProps) {
+function ScoreInput({ value, onChange }: ScoreInputProps) {
   return (
     <input
       type="text"
@@ -24,7 +23,8 @@ function ScoreInput({
           return
         }
 
-        onChange(Number(inputValue))
+        const score = Number(inputValue)
+        if (isScore(score)) onChange(score)
       }}
     />
   )

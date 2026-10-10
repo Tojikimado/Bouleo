@@ -5,6 +5,8 @@ import type { Team } from '../types/team'
 import { generateFixedTeams } from './generateFixedTeamRounds'
 import { generateMeleeTeams } from './generateMeleeTeams'
 import { generateRounds } from './generateRounds'
+import { assertContest } from './contestValidation'
+import { assertRoundCount, getTeamSize } from './contestRules'
 
 interface CreateContestOptions {
   name: string
@@ -15,55 +17,25 @@ interface CreateContestOptions {
   teams: Team[]
 }
 
-function getTeamSize(
-  format: ContestFormat,
-): 1 | 2 | 3 {
-  switch (format) {
-    case 'tete-a-tete':
-      return 1
+export function createContest(options: CreateContestOptions): Contest {
+  const { name, totalRounds, format, mode, players, teams } = options
 
-    case 'doublette':
-      return 2
-
-    case 'triplette':
-      return 3
-  }
-}
-
-export function createContest(
-  options: CreateContestOptions,
-): Contest {
-  const {
-    name,
-    totalRounds,
-    format,
-    mode,
-    players,
-    teams,
-  } = options
-
+  assertRoundCount(totalRounds)
   let rounds
 
   if (mode === 'fixed-teams') {
-    const teamsByRound = generateFixedTeams(
-      teams,
-      totalRounds,
-    )
+    const teamsByRound = generateFixedTeams(teams, totalRounds)
 
     rounds = generateRounds(teamsByRound)
   } else {
     const teamSize = getTeamSize(format)
 
-    const teamsByRound = generateMeleeTeams(
-      players,
-      teamSize,
-      totalRounds,
-    )
+    const teamsByRound = generateMeleeTeams(players, teamSize, totalRounds)
 
     rounds = generateRounds(teamsByRound)
   }
 
-  return {
+  const result: Contest = {
     id: crypto.randomUUID(),
     name,
     totalRounds,
@@ -74,4 +46,6 @@ export function createContest(
     rounds,
     currentRound: 1,
   }
+  assertContest(result)
+  return result
 }

@@ -24,47 +24,27 @@ function ConfirmModal({
   }
 
   return (
-    <div
-      className="confirm-modal-overlay"
-      role="presentation"
-      onMouseDown={onCancel}
-    >
+    <div className="confirm-modal-overlay" role="presentation" onMouseDown={onCancel}>
       <div
         className="confirm-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-modal-title"
         aria-describedby="confirm-modal-message"
-        onMouseDown={(event) =>
-          event.stopPropagation()
-        }
+        onMouseDown={(event) => event.stopPropagation()}
       >
-        <div className="confirm-modal-icon">
-          !
-        </div>
+        <div className="confirm-modal-icon">!</div>
 
-        <h2 id="confirm-modal-title">
-          {title}
-        </h2>
+        <h2 id="confirm-modal-title">{title}</h2>
 
-        <p id="confirm-modal-message">
-          {message}
-        </p>
+        <p id="confirm-modal-message">{message}</p>
 
         <div className="confirm-modal-actions">
-          <button
-            className="confirm-modal-cancel"
-            type="button"
-            onClick={onCancel}
-          >
+          <button className="confirm-modal-cancel" type="button" onClick={onCancel}>
             {cancelLabel}
           </button>
 
-          <button
-            className="confirm-modal-confirm"
-            type="button"
-            onClick={onConfirm}
-          >
+          <button className="confirm-modal-confirm" type="button" onClick={onConfirm}>
             {confirmLabel}
           </button>
         </div>

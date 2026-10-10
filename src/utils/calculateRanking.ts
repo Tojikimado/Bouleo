@@ -1,6 +1,6 @@
-import type { Contest } from '../types/contest'
-import type { Player } from '../types/player'
+﻿import type { Contest } from '../types/contest'
 import type { Team } from '../types/team'
+import { isByeMatch } from './contestRules'
 
 export interface RankingEntry {
   id: string
@@ -11,167 +11,51 @@ export interface RankingEntry {
   goalAverage: number
 }
 
-export function calculateRanking(
-  contest: Contest,
-): RankingEntry[] {
-  if (contest.mode === 'fixed-teams') {
-    return calculateFixedTeamsRanking(contest)
-  }
+export function calculateRanking(contest: Contest): RankingEntry[] {
+  const fixedTeams = contest.mode === 'fixed-teams'
+  const participants = fixedTeams
+    ? contest.teams.map((team) => ({
+        id: team.id,
+        name: team.players.map((player) => player.name).join(' / '),
+      }))
+    : contest.players
+  const entries = new Map<string, RankingEntry>(
+    participants.map(({ id, name }) => [
+      id,
+      { id, name, rank: 0, wins: 0, losses: 0, goalAverage: 0 },
+    ]),
+  )
 
-  return calculateMeleeRanking(contest)
-}
-
-function calculateFixedTeamsRanking(
-  contest: Contest,
-): RankingEntry[] {
-  const ranking = new Map<string, RankingEntry>()
-
-  for (const team of contest.teams) {
-    ranking.set(team.id, {
-      id: team.id,
-      name: getTeamName(team),
-      rank: 0,
-      wins: 0,
-      losses: 0,
-      goalAverage: 0,
-    })
+  function addResult(team: Team, scored: number, conceded: number) {
+    const ids = fixedTeams ? [team.id] : team.players.map((player) => player.id)
+    for (const id of ids) {
+      const entry = entries.get(id)
+      if (!entry) continue
+      entry.goalAverage += scored - conceded
+      if (scored > conceded) entry.wins++
+      if (scored < conceded) entry.losses++
+    }
   }
 
   for (const round of contest.rounds) {
     for (const match of round.matches) {
-      if (match.scoreA === null || match.scoreB === null) {
-        continue
-      }
-
-      const teamA = ranking.get(match.teamA.id)
-      if (!teamA) continue
-
-      const difference = match.scoreA - match.scoreB
-      teamA.goalAverage += difference
-
-      if (match.isBye || match.teamB === null) {
-        if (match.scoreA > match.scoreB) {
-          teamA.wins++
-        } else if (match.scoreB > match.scoreA) {
-          teamA.losses++
-        }
-
-        continue
-      }
-
-      const teamB = ranking.get(match.teamB.id)
-      if (!teamB) continue
-
-      teamB.goalAverage -= difference
-
-      if (match.scoreA > match.scoreB) {
-        teamA.wins++
-        teamB.losses++
-      } else if (match.scoreB > match.scoreA) {
-        teamB.wins++
-        teamA.losses++
-      }
+      if (match.scoreA === null || match.scoreB === null) continue
+      addResult(match.teamA, match.scoreA, match.scoreB)
+      if (!isByeMatch(match) && match.teamB)
+        addResult(match.teamB, match.scoreB, match.scoreA)
     }
   }
 
-  return sortRanking([...ranking.values()])
-}
-
-function calculateMeleeRanking(
-  contest: Contest,
-): RankingEntry[] {
-  const ranking = new Map<string, RankingEntry>()
-
-  for (const player of contest.players) {
-    ranking.set(player.id, {
-      id: player.id,
-      name: player.name,
-      rank: 0,
-      wins: 0,
-      losses: 0,
-      goalAverage: 0,
-    })
+  const ranking = [...entries.values()].sort(
+    (first, second) => second.wins - first.wins || second.goalAverage - first.goalAverage,
+  )
+  for (const [index, entry] of ranking.entries()) {
+    const previous = ranking[index - 1]
+    const tied =
+      previous &&
+      previous.wins === entry.wins &&
+      previous.goalAverage === entry.goalAverage
+    entry.rank = tied ? previous.rank : index + 1
   }
-
-  for (const round of contest.rounds) {
-    for (const match of round.matches) {
-      if (match.scoreA === null || match.scoreB === null) {
-        continue
-      }
-
-      const difference = match.scoreA - match.scoreB
-      const teamAWon = match.scoreA > match.scoreB
-      const teamBWon = match.scoreB > match.scoreA
-
-      for (const player of match.teamA.players) {
-        const entry = ranking.get(player.id)
-        if (!entry) continue
-
-        entry.goalAverage += difference
-
-        if (teamAWon) {
-          entry.wins++
-        } else if (teamBWon) {
-          entry.losses++
-        }
-      }
-
-      if (match.isBye || match.teamB === null) {
-        continue
-      }
-
-      for (const player of match.teamB.players) {
-        const entry = ranking.get(player.id)
-        if (!entry) continue
-
-        entry.goalAverage -= difference
-
-        if (teamBWon) {
-          entry.wins++
-        } else if (teamAWon) {
-          entry.losses++
-        }
-      }
-    }
-  }
-
-  return sortRanking([...ranking.values()])
-}
-
-function sortRanking(
-  ranking: RankingEntry[],
-): RankingEntry[] {
-  ranking.sort((a, b) => {
-    if (b.wins !== a.wins) {
-      return b.wins - a.wins
-    }
-
-    return b.goalAverage - a.goalAverage
-  })
-
-  let currentRank = 1
-
-  for (let i = 0; i < ranking.length; i++) {
-    if (i > 0) {
-      const current = ranking[i]
-      const previous = ranking[i - 1]
-
-      if (
-        current.wins !== previous.wins ||
-        current.goalAverage !== previous.goalAverage
-      ) {
-        currentRank = i + 1
-      }
-    }
-
-    ranking[i].rank = currentRank
-  }
-
   return ranking
-}
-
-function getTeamName(team: Team): string {
-  return team.players
-    .map((player: Player) => player.name)
-    .join(' / ')
 }

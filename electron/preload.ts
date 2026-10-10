@@ -1,35 +1,19 @@
-import { ipcRenderer, contextBridge } from 'electron'
-import type { Contest } from '../src/types/contest'
+﻿import { contextBridge, ipcRenderer } from 'electron'
+import type { BouleoApi } from '../src/types/storage'
 
-contextBridge.exposeInMainWorld(
-  'bouleo',
-  {
-    saveContest(contest: Contest) {
-      return ipcRenderer.invoke(
-        'save-contest',
-        contest,
-      )
-    },
+const api: BouleoApi = {
+  saveContest: (contest) => ipcRenderer.invoke('save-contest', contest),
+  listContests: () => ipcRenderer.invoke('list-contests'),
+  loadContest: (id) => ipcRenderer.invoke('load-contest', id),
+  deleteContest: (id) => ipcRenderer.invoke('delete-contest', id),
 
-    listContests() {
-      return ipcRenderer.invoke(
-        'list-contests',
-      )
-    },
-
-    loadContest(contestId: string) {
-      return ipcRenderer.invoke(
-        'load-contest',
-        contestId,
-      )
-    },
-
-    
-    deleteContest(contestId: string) {
-      return ipcRenderer.invoke(
-        'delete-contest',
-        contestId,
-      )
-    },
+  onPrepareClose(callback) {
+    const listener = (_event: Electron.IpcRendererEvent, token: string) => callback(token)
+    ipcRenderer.on('prepare-close', listener)
+    ipcRenderer.send('renderer-ready')
+    return () => ipcRenderer.removeListener('prepare-close', listener)
   },
-)
+  finishClose: (token, success) => ipcRenderer.send('finish-close', token, success),
+}
+
+contextBridge.exposeInMainWorld('bouleo', api)

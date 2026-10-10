@@ -154,16 +154,6 @@
     transform 0.2s ease;
 }
 
-.ranking-secondary-button {
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.ranking-secondary-button:hover {
-  background: var(--color-surface-hover);
-}
-
 .ranking-primary-button {
   margin-left: auto;
   border: 0;

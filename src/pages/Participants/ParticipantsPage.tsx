@@ -2,9 +2,15 @@ import { useState } from 'react'
 
 import './ParticipantsPage.css'
 
-import type { Contest, ContestFormat, ContestMode } from '../../types/contest'
+import type {
+  Contest,
+  ContestFormat,
+  ContestMode,
+  ParticipantsDraft,
+} from '../../types/contest'
 import type { Player } from '../../types/player'
 import type { Team } from '../../types/team'
+import { getTeamSize, getMinimumParticipants, MIN_TEAMS } from '../../utils/contestRules'
 
 interface ParticipantsPageProps {
   contest: Contest | null
@@ -12,55 +18,14 @@ interface ParticipantsPageProps {
   totalRounds: number
   format: ContestFormat
   mode: ContestMode
-  onBack: () => void
-  onContinue: (
-    players: Player[],
-    teams: Team[],
-  ) => void
-}
-
-interface TeamInput {
-  id: string
-  players: string[]
-}
-
-function getTeamSize(
-  format: ContestFormat,
-): number {
-  switch (format) {
-    case 'tete-a-tete':
-      return 1
-
-    case 'doublette':
-      return 2
-
-    case 'triplette':
-      return 3
-  }
-}
-
-function getMinimumParticipants(
-  format: ContestFormat,
-  mode: ContestMode,
-): number {
-  if (mode === 'fixed-teams') {
-    return 4
-  }
-
-  switch (format) {
-    case 'tete-a-tete':
-      return 4
-
-    case 'doublette':
-      return 8
-
-    case 'triplette':
-      return 12
-  }
+  draft?: ParticipantsDraft | null
+  onBack: (draft: ParticipantsDraft) => void
+  onContinue: (players: Player[], teams: Team[]) => void
 }
 
 function ParticipantsPage({
   contest,
+  draft,
   name,
   totalRounds,
   format,
@@ -70,101 +35,73 @@ function ParticipantsPage({
 }: ParticipantsPageProps) {
   const teamSize = getTeamSize(format)
 
-  const minimumParticipants =
-    getMinimumParticipants(format, mode)
+  const minimumParticipants = getMinimumParticipants(format, mode)
 
-  const [teams, setTeams] = useState<TeamInput[]>(
-    contest?.teams.length
-      ? contest.teams.map((team) => ({
-          id: team.id,
-          players: Array.from(
-            { length: teamSize },
-            (_, index) =>
-              team.players[index]?.name ?? '',
-          ),
+  const [teams, setTeams] = useState<Team[]>(() => {
+    const initialTeams = (draft ?? contest)?.teams ?? []
+    const inputs = initialTeams.length
+      ? initialTeams
+      : Array.from({ length: MIN_TEAMS }, () => ({
+          id: crypto.randomUUID(),
+          players: [],
         }))
-      : [
-          {
-            id: crypto.randomUUID(),
-            players: Array(teamSize).fill(''),
-          },
-          {
-            id: crypto.randomUUID(),
-            players: Array(teamSize).fill(''),
-          },
-          {
-            id: crypto.randomUUID(),
-            players: Array(teamSize).fill(''),
-          },
-          {
-            id: crypto.randomUUID(),
-            players: Array(teamSize).fill(''),
-          },
-        ],
-  )
+    return inputs.map((team) => ({
+      id: team.id,
+      players: Array.from({ length: teamSize }, (_, index) => ({
+        id: team.players[index]?.id ?? crypto.randomUUID(),
+        name: team.players[index]?.name ?? '',
+      })),
+    }))
+  })
 
-  const [players, setPlayers] = useState<string[]>(
-    contest?.players.map(
-      (player) => player.name,
-    ) ?? [],
+  const [players, setPlayers] = useState<Player[]>(
+    () => (draft ?? contest)?.players.map((player) => ({ ...player })) ?? [],
   )
 
   function addTeam() {
-    setTeams((currentTeams) => [
-      ...currentTeams,
+    setTeams((current) => [
+      ...current,
       {
         id: crypto.randomUUID(),
-        players: Array(teamSize).fill(''),
+        players: Array.from({ length: teamSize }, () => ({
+          id: crypto.randomUUID(),
+          name: '',
+        })),
       },
     ])
   }
 
-  function updateTeamPlayer(
-    teamId: string,
-    playerIndex: number,
-    value: string,
-  ) {
-    setTeams((currentTeams) =>
-      currentTeams.map((team) => {
-        if (team.id !== teamId) {
-          return team
-        }
-
-        const updatedPlayers = [...team.players]
-
-        updatedPlayers[playerIndex] = value
-
-        return {
-          ...team,
-          players: updatedPlayers,
-        }
-      }),
+  function updateTeamPlayer(teamId: string, playerIndex: number, name: string) {
+    setTeams((current) =>
+      current.map((team) =>
+        team.id === teamId
+          ? {
+              ...team,
+              players: team.players.map((player, index) =>
+                index === playerIndex ? { ...player, name } : player,
+              ),
+            }
+          : team,
+      ),
     )
   }
 
   function removeTeam(teamId: string) {
-    setTeams((currentTeams) =>
-      currentTeams.filter(
-        (team) => team.id !== teamId,
-      ),
-    )
+    setTeams((currentTeams) => currentTeams.filter((team) => team.id !== teamId))
   }
 
   function addPlayer() {
     setPlayers((currentPlayers) => [
       ...currentPlayers,
-      '',
+      { id: crypto.randomUUID(), name: '' },
     ])
   }
 
-  function updatePlayer(
-    index: number,
-    value: string,
-  ) {
+  function updatePlayer(index: number, value: string) {
     setPlayers((currentPlayers) => {
       const updatedPlayers = [...currentPlayers]
 
-      updatedPlayers[index] = value
+      updatedPlayers[index] = { ...updatedPlayers[index], name: value }
 
       return updatedPlayers
     })
@@ -172,10 +109,7 @@ function ParticipantsPage({
 
   function removePlayer(index: number) {
     setPlayers((currentPlayers) =>
-      currentPlayers.filter(
-        (_, playerIndex) =>
-          playerIndex !== index,
-      ),
+      currentPlayers.filter((_, playerIndex) => playerIndex !== index),
     )
   }
 
@@ -184,90 +118,36 @@ function ParticipantsPage({
       return
     }
 
+    const trimName = (player: Player): Player => ({ ...player, name: player.name.trim() })
     if (mode === 'fixed-teams') {
-      const allPlayers: Player[] = []
-      const resultTeams: Team[] = []
-
-      for (const inputTeam of teams) {
-        const teamPlayers: Player[] = []
-
-        const existingTeam = contest?.teams.find(
-          (team) => team.id === inputTeam.id,
-        )
-
-        for (
-          let playerIndex = 0;
-          playerIndex < inputTeam.players.length;
-          playerIndex++
-        ) {
-          const playerName = inputTeam.players[playerIndex]
-
-          const existingPlayer =
-            existingTeam?.players[playerIndex]
-
-          const player: Player = {
-            id: existingPlayer?.id ?? crypto.randomUUID(),
-            name: playerName.trim(),
-          }
-
-          allPlayers.push(player)
-          teamPlayers.push(player)
-        }
-
-        resultTeams.push({
-          id: inputTeam.id,
-          players: teamPlayers,
-        })
-      }
-
+      const resultTeams = teams.map((team) => ({
+        ...team,
+        players: team.players.map(trimName),
+      }))
       onContinue(
-        allPlayers,
+        resultTeams.flatMap((team) => team.players),
         resultTeams,
       )
-
-      return
+    } else {
+      onContinue(players.map(trimName), [])
     }
-
-    const resultPlayers: Player[] =
-      players.map((playerName, index) => ({
-        id:
-          contest?.players[index]?.id ??
-          crypto.randomUUID(),
-        name: playerName.trim(),
-      }))
-
-    onContinue(resultPlayers, [])
   }
 
-  const fixedPlayers = teams.flatMap(
-    (team) => team.players,
-  )
+  const fixedPlayers = teams.flatMap((team) => team.players)
 
-  const participantCount =
-    mode === 'fixed-teams'
-      ? teams.length
-      : players.length
+  const participantCount = mode === 'fixed-teams' ? teams.length : players.length
 
   const allNamesFilled =
     mode === 'fixed-teams'
-      ? fixedPlayers.every(
-          (player) => player.trim() !== '',
-        )
-      : players.every(
-          (player) => player.trim() !== '',
-        )
+      ? fixedPlayers.every((player) => player.name.trim() !== '')
+      : players.every((player) => player.name.trim() !== '')
 
-  const canContinue =
-    participantCount >= minimumParticipants &&
-    allNamesFilled
+  const canContinue = participantCount >= minimumParticipants && allNamesFilled
 
-    return (
+  return (
     <main className="participants-page">
       <div className="participants-content">
-        <button
-          className="participants-back"
-          onClick={onBack}
-        >
+        <button className="participants-back" onClick={() => onBack({ teams, players })}>
           ← Retour
         </button>
 
@@ -284,102 +164,66 @@ function ParticipantsPage({
             <div
               className={`participants-teams-container ${
                 teams.length >=
-                  (format === 'tete-a-tete'
-                    ? 13
-                    : format === 'doublette'
-                      ? 10
-                      : 7)
+                (format === 'tete-a-tete' ? 13 : format === 'doublette' ? 10 : 7)
                   ? 'is-scrollable'
                   : ''
               }`}
             >
-          <div className="participants-grid">
-            {teams.map((team, teamIndex) => (
-              <div
-                className="team-card"
-                key={team.id}
-              >
-                <div className="team-card-header">
-                  <h2>
-                    Équipe {teamIndex + 1}
-                  </h2>
+              <div className="participants-grid">
+                {teams.map((team, teamIndex) => (
+                  <div className="team-card" key={team.id}>
+                    <div className="team-card-header">
+                      <h2>Équipe {teamIndex + 1}</h2>
 
-                  {teams.length > 4 && (
-                    <button
-                      className="team-remove-button"
-                      onClick={() =>
-                        removeTeam(team.id)
-                      }
-                    >
-                      Supprimer
-                    </button>
-                  )}
-                </div>
+                      {teams.length > MIN_TEAMS && (
+                        <button
+                          className="team-remove-button"
+                          onClick={() => removeTeam(team.id)}
+                        >
+                          Supprimer
+                        </button>
+                      )}
+                    </div>
 
-                <div className="team-card-players">
-                  {team.players.map(
-                    (player, playerIndex) => (
-                      <input
-                        key={playerIndex}
-                        type="text"
-                        value={player}
-                        onChange={(event) =>
-                          updateTeamPlayer(
-                            team.id,
-                            playerIndex,
-                            event.target.value,
-                          )
-                        }
-                        placeholder={
-                          teamSize === 1
-                            ? 'Nom du joueur'
-                            : `Joueur ${playerIndex + 1}`
-                        }
-                      />
-                    ),
-                  )}
-                </div>
+                    <div className="team-card-players">
+                      {team.players.map((player, playerIndex) => (
+                        <input
+                          key={player.id}
+                          type="text"
+                          value={player.name}
+                          onChange={(event) =>
+                            updateTeamPlayer(team.id, playerIndex, event.target.value)
+                          }
+                          placeholder={
+                            teamSize === 1 ? 'Nom du joueur' : `Joueur ${playerIndex + 1}`
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-            <button
-              className="participants-add-button"
-              onClick={addTeam}
-            >
+            <button className="participants-add-button" onClick={addTeam}>
               + Nouvelle équipe
             </button>
           </>
         ) : (
           <>
-            <div
-              className={`players-list ${
-                players.length >= 8 ? 'is-scrollable' : ''
-              }`}
-            >
+            <div className={`players-list ${players.length >= 8 ? 'is-scrollable' : ''}`}>
               {players.map((player, index) => (
-                <div
-                  className="player-row"
-                  key={index}
-                >
+                <div className="player-row" key={player.id}>
                   <input
                     type="text"
-                    value={player}
-                    onChange={(event) =>
-                      updatePlayer(
-                        index,
-                        event.target.value,
-                      )
-                    }
+                    value={player.name}
+                    onChange={(event) => updatePlayer(index, event.target.value)}
                     placeholder="Nom du joueur"
                   />
 
                   <button
                     className="player-remove-button"
-                    onClick={() =>
-                      removePlayer(index)
-                    }
+                    onClick={() => removePlayer(index)}
                   >
                     Supprimer
                   </button>
@@ -387,10 +231,7 @@ function ParticipantsPage({
               ))}
             </div>
 
-            <button
-              className="participants-add-button"
-              onClick={addPlayer}
-            >
+            <button className="participants-add-button" onClick={addPlayer}>
               + Ajouter un joueur
             </button>
           </>
@@ -399,9 +240,7 @@ function ParticipantsPage({
         {!canContinue && (
           <p className="participants-validation">
             Minimum requis : {minimumParticipants}{' '}
-            {mode === 'fixed-teams'
-              ? 'équipes'
-              : 'joueurs'}
+            {mode === 'fixed-teams' ? 'équipes' : 'joueurs'}
           </p>
         )}
 

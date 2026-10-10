@@ -1,71 +1,51 @@
 import { useEffect, useState } from 'react'
 
-import type {
-  Contest,
-  ContestFormat,
-  ContestMode,
-} from '../../types/contest'
+import type { Contest } from '../../types/contest'
+import type { ContestSummary } from '../../types/storage'
+import { FORMAT_LABELS, MODE_LABELS } from '../../utils/contestRules'
 
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal'
 import './OpenContestPage.css'
-
-interface ContestSummary {
-  id: string
-  name: string
-  totalRounds: number
-  format: ContestFormat
-  mode: ContestMode
-  savedAt: string
-}
 
 interface OpenContestPageProps {
   onBack: () => void
   onOpenContest: (contest: Contest) => void
 }
 
-function getFormatLabel(format: ContestFormat): string {
-  switch (format) {
-    case 'tete-a-tete':
-      return 'Tête-à-tête'
-    case 'doublette':
-      return 'Doublette'
-    case 'triplette':
-      return 'Triplette'
-  }
-}
-
-function getModeLabel(mode: ContestMode): string {
-  switch (mode) {
-    case 'fixed-teams':
-      return 'Équipes fixes'
-    case 'melee-demelee':
-      return 'Mêlée-démêlée'
-  }
-}
-
-function OpenContestPage({
-  onBack,
-  onOpenContest,
-}: OpenContestPageProps) {
+function OpenContestPage({ onBack, onOpenContest }: OpenContestPageProps) {
   const [contests, setContests] = useState<ContestSummary[]>([])
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [isManaging, setIsManaging] = useState(false)
-  const [contestsToDelete, setContestsToDelete] =
-    useState<ContestSummary[] | null>(null)
+  const [contestsToDelete, setContestsToDelete] = useState<ContestSummary[] | null>(null)
   const [deleteError, setDeleteError] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [warnings, setWarnings] = useState<string[]>([])
+
+  function reload() {
+    setIsLoading(true)
+    setLoadError('')
+    void window.bouleo
+      .listContests()
+      .then((result) => {
+        setContests(result.contests)
+        setWarnings(result.errors)
+      })
+      .catch(() =>
+        setLoadError(
+          'Impossible de lire les concours sauvegardés. Vérifiez l’accès au dossier puis réessayez.',
+        ),
+      )
+      .finally(() => setIsLoading(false))
+  }
 
   useEffect(() => {
-    window.bouleo.listContests()
-      .then(setContests)
-      .catch((error) => {
-        console.error('Impossible de charger les concours :', error)
-      })
+    reload()
   }, [])
 
   const allSelected =
-    contests.length > 0 &&
-    contests.every((contest) => selectedIds.includes(contest.id))
+    contests.length > 0 && contests.every((contest) => selectedIds.includes(contest.id))
 
   function handleToggleSelection(contestId: string) {
     setSelectedIds((current) =>
@@ -76,9 +56,7 @@ function OpenContestPage({
   }
 
   function handleToggleSelectAll() {
-    setSelectedIds(
-      allSelected ? [] : contests.map((contest) => contest.id),
-    )
+    setSelectedIds(allSelected ? [] : contests.map((contest) => contest.id))
   }
 
   function handleToggleManagement() {
@@ -89,9 +67,7 @@ function OpenContestPage({
     setIsManaging((current) => !current)
   }
 
-  function handleOpenDeleteConfirmation(
-    targets: ContestSummary[],
-  ) {
+  function handleOpenDeleteConfirmation(targets: ContestSummary[]) {
     if (targets.length === 0) {
       return
     }
@@ -110,9 +86,7 @@ function OpenContestPage({
 
     try {
       const results = await Promise.allSettled(
-        contestsToDelete.map((contest) =>
-          window.bouleo.deleteContest(contest.id),
-        ),
+        contestsToDelete.map((contest) => window.bouleo.deleteContest(contest.id)),
       )
 
       const deletedIds = new Set<string>()
@@ -133,21 +107,17 @@ function OpenContestPage({
       })
 
       if (deletedIds.size > 0) {
-        setContests((current) =>
-          current.filter((contest) => !deletedIds.has(contest.id)),
-        )
+        setContests((current) => current.filter((contest) => !deletedIds.has(contest.id)))
 
-        setSelectedIds((current) =>
-          current.filter((id) => !deletedIds.has(id)),
-        )
+        setSelectedIds((current) => current.filter((id) => !deletedIds.has(id)))
       }
 
       if (failedContests.length > 0) {
         setContestsToDelete(failedContests)
         setDeleteError(
           `${deletedIds.size} concours supprimé(s). ` +
-          `${failedContests.length} suppression(s) ont échoué. ` +
-          'Les concours restants sont conservés et peuvent être réessayés.',
+            `${failedContests.length} suppression(s) ont échoué. ` +
+            'Les concours restants sont conservés et peuvent être réessayés.',
         )
       } else {
         setContestsToDelete(null)
@@ -180,11 +150,7 @@ function OpenContestPage({
   return (
     <main className="open-contest-page">
       <div className="open-contest-content">
-        <button
-          className="open-contest-back"
-          type="button"
-          onClick={onBack}
-        >
+        <button className="open-contest-back" type="button" onClick={onBack}>
           ← Retour à l'accueil
         </button>
 
@@ -205,9 +171,27 @@ function OpenContestPage({
           )}
         </header>
 
-        {contests.length === 0 ? (
+        {loadError && (
+          <p role="alert">
+            {loadError} <button onClick={reload}>Réessayer</button>
+          </p>
+        )}
+        {warnings.map((warning) => (
+          <p role="alert" key={warning}>
+            {warning}
+          </p>
+        ))}
+        {isLoading ? (
+          <p role="status">Chargement…</p>
+        ) : contests.length === 0 ? (
           <div className="open-contest-empty">
-            <p>Aucun concours sauvegardé.</p>
+            {!loadError && (
+              <p>
+                {warnings.length
+                  ? 'Aucun concours lisible.'
+                  : 'Aucun concours sauvegardé.'}
+              </p>
+            )}
           </div>
         ) : (
           <>
@@ -218,9 +202,7 @@ function OpenContestPage({
                   type="button"
                   onClick={handleToggleSelectAll}
                 >
-                  {allSelected
-                    ? 'Tout désélectionner'
-                    : 'Tout sélectionner'}
+                  {allSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
                 </button>
 
                 <span className="open-contest-selection-count">
@@ -234,9 +216,7 @@ function OpenContestPage({
                   disabled={selectedIds.length === 0}
                   onClick={() =>
                     handleOpenDeleteConfirmation(
-                      contests.filter((contest) =>
-                        selectedIds.includes(contest.id),
-                      ),
+                      contests.filter((contest) => selectedIds.includes(contest.id)),
                     )
                   }
                 >
@@ -245,7 +225,9 @@ function OpenContestPage({
               </div>
             )}
 
-            <div className={`open-contest-list${contests.length >= 5 ? ' is-scrollable' : ''}`}>
+            <div
+              className={`open-contest-list${contests.length >= 5 ? ' is-scrollable' : ''}`}
+            >
               {contests.map((contest) => {
                 const isSelected = selectedIds.includes(contest.id)
 
@@ -259,9 +241,7 @@ function OpenContestPage({
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() =>
-                            handleToggleSelection(contest.id)
-                          }
+                          onChange={() => handleToggleSelection(contest.id)}
                           aria-label={`Sélectionner le concours ${contest.name}`}
                         />
                       </label>
@@ -274,9 +254,9 @@ function OpenContestPage({
                         {contest.totalRounds} partie
                         {contest.totalRounds > 1 ? 's' : ''}
                         {' · '}
-                        {getFormatLabel(contest.format)}
+                        {FORMAT_LABELS[contest.format]}
                         {' · '}
-                        {getModeLabel(contest.mode)}
+                        {MODE_LABELS[contest.mode]}
                       </p>
 
                       <p className="open-contest-date">
@@ -291,15 +271,16 @@ function OpenContestPage({
                         type="button"
                         onClick={async () => {
                           try {
-                            const loadedContest =
-                              await window.bouleo.loadContest(contest.id)
+                            const loadedContest = await window.bouleo.loadContest(
+                              contest.id,
+                            )
 
                             onOpenContest(loadedContest)
                           } catch (error) {
-                            console.error(
-                              'Impossible d’ouvrir le concours :',
-                              error,
+                            setLoadError(
+                              'Impossible d’ouvrir ce concours : sa sauvegarde est inaccessible ou incompatible.',
                             )
+                            console.error('Impossible d’ouvrir le concours :', error)
                           }
                         }}
                       >
@@ -312,9 +293,7 @@ function OpenContestPage({
                           type="button"
                           aria-label={`Supprimer le concours ${contest.name}`}
                           title="Supprimer ce concours"
-                          onClick={() =>
-                            handleOpenDeleteConfirmation([contest])
-                          }
+                          onClick={() => handleOpenDeleteConfirmation([contest])}
                         >
                           <svg
                             viewBox="0 0 24 24"

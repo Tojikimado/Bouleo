@@ -3,9 +3,10 @@ import { useState } from 'react'
 import './NewContestPage.css'
 
 import type { Contest, ContestFormat, ContestMode } from '../../types/contest'
+import { isValidRoundCount, MAX_ROUNDS } from '../../utils/contestRules'
 
 interface NewContestPageProps {
-  contest: Contest | null
+  contest: Pick<Contest, 'name' | 'totalRounds' | 'format' | 'mode'> | null
   onBack: () => void
   onContinue: (
     name: string,
@@ -15,48 +16,27 @@ interface NewContestPageProps {
   ) => void
 }
 
-function NewContestPage({
-  contest,
-  onBack,
-  onContinue,
-}: NewContestPageProps) {
-  const [name, setName] = useState(
-    contest?.name ?? '',
-  )
+function NewContestPage({ contest, onBack, onContinue }: NewContestPageProps) {
+  const [name, setName] = useState(contest?.name ?? '')
 
-  const [totalRounds, setTotalRounds] =
-    useState(contest?.totalRounds ?? 4)
+  const [totalRounds, setTotalRounds] = useState(contest?.totalRounds ?? 4)
 
-  const [format, setFormat] =
-    useState<ContestFormat>(
-      contest?.format ?? 'tete-a-tete',
-    )
+  const [format, setFormat] = useState<ContestFormat>(contest?.format ?? 'tete-a-tete')
 
-  const [mode, setMode] =
-    useState<ContestMode>(
-      contest?.mode ?? 'fixed-teams',
-    )
+  const [mode, setMode] = useState<ContestMode>(contest?.mode ?? 'fixed-teams')
 
   function handleContinue() {
-    if (!name.trim()) {
+    if (!name.trim() || !isValidRoundCount(totalRounds)) {
       return
     }
 
-    onContinue(
-      name.trim(),
-      totalRounds,
-      format,
-      mode,
-    )
+    onContinue(name.trim(), totalRounds, format, mode)
   }
 
-    return (
+  return (
     <main className="new-contest-page">
       <div className="new-contest-content">
-        <button
-          className="new-contest-back"
-          onClick={onBack}
-        >
+        <button className="new-contest-back" onClick={onBack}>
           ← Retour
         </button>
 
@@ -64,45 +44,40 @@ function NewContestPage({
 
         <div className="new-contest-form">
           <div className="new-contest-field">
-            <label htmlFor="contest-name">
-              Nom du concours
-            </label>
+            <label htmlFor="contest-name">Nom du concours</label>
 
             <input
               id="contest-name"
               type="text"
               value={name}
-              onChange={(event) =>
-                setName(event.target.value)
-              }
+              onChange={(event) => setName(event.target.value)}
               placeholder="Ex. Concours 09/10/2026"
             />
           </div>
 
           <div className="new-contest-field">
-            <label htmlFor="total-rounds">
-              Nombre de parties
-            </label>
+            <label htmlFor="total-rounds">Nombre de parties</label>
 
             <input
               id="total-rounds"
               type="number"
               min="1"
+              max={MAX_ROUNDS}
+              step="1"
               value={totalRounds}
               onChange={(event) => {
-                const value = Number(
-                  event.target.value,
-                )
+                const value = Number(event.target.value)
 
-                setTotalRounds(
-                  Number.isNaN(value)
-                    ? 1
-                    : Math.max(1, value),
-                )
+                setTotalRounds(Number.isNaN(value) ? 1 : Math.max(1, value))
               }}
             />
           </div>
 
+          {!isValidRoundCount(totalRounds) && (
+            <p role="alert">
+              Le nombre de parties doit être un entier entre 1 et {MAX_ROUNDS}.
+            </p>
+          )}
           <div className="new-contest-section">
             <h2>Format</h2>
 
@@ -111,12 +86,8 @@ function NewContestPage({
                 <input
                   type="radio"
                   name="format"
-                  checked={
-                    format === 'tete-a-tete'
-                  }
-                  onChange={() =>
-                    setFormat('tete-a-tete')
-                  }
+                  checked={format === 'tete-a-tete'}
+                  onChange={() => setFormat('tete-a-tete')}
                 />
 
                 <span>Tête-à-tête</span>
@@ -126,12 +97,8 @@ function NewContestPage({
                 <input
                   type="radio"
                   name="format"
-                  checked={
-                    format === 'doublette'
-                  }
-                  onChange={() =>
-                    setFormat('doublette')
-                  }
+                  checked={format === 'doublette'}
+                  onChange={() => setFormat('doublette')}
                 />
 
                 <span>Doublette</span>
@@ -141,12 +108,8 @@ function NewContestPage({
                 <input
                   type="radio"
                   name="format"
-                  checked={
-                    format === 'triplette'
-                  }
-                  onChange={() =>
-                    setFormat('triplette')
-                  }
+                  checked={format === 'triplette'}
+                  onChange={() => setFormat('triplette')}
                 />
 
                 <span>Triplette</span>
@@ -162,12 +125,8 @@ function NewContestPage({
                 <input
                   type="radio"
                   name="mode"
-                  checked={
-                    mode === 'fixed-teams'
-                  }
-                  onChange={() =>
-                    setMode('fixed-teams')
-                  }
+                  checked={mode === 'fixed-teams'}
+                  onChange={() => setMode('fixed-teams')}
                 />
 
                 <span>Équipes fixes</span>
@@ -177,12 +136,8 @@ function NewContestPage({
                 <input
                   type="radio"
                   name="mode"
-                  checked={
-                    mode === 'melee-demelee'
-                  }
-                  onChange={() =>
-                    setMode('melee-demelee')
-                  }
+                  checked={mode === 'melee-demelee'}
+                  onChange={() => setMode('melee-demelee')}
                 />
 
                 <span>Mêlée-démêlée</span>
@@ -193,7 +148,7 @@ function NewContestPage({
           <button
             className="new-contest-continue"
             onClick={handleContinue}
-            disabled={!name.trim()}
+            disabled={!name.trim() || !isValidRoundCount(totalRounds)}
           >
             Continuer →
           </button>

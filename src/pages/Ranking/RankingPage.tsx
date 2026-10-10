@@ -10,20 +10,13 @@ interface RankingPageProps {
   onBackHome: () => void
 }
 
-function RankingPage({
-  contest,
-  onBack,
-  onBackHome,
-}: RankingPageProps) {
+function RankingPage({ contest, onBack, onBackHome }: RankingPageProps) {
   const ranking = calculateRanking(contest)
 
   return (
     <main className="ranking-page">
       <div className="ranking-content">
-        <button
-          className="ranking-back"
-          onClick={onBack}
-        >
+        <button className="ranking-back" onClick={onBack}>
           ← Retour au concours
         </button>
 
@@ -46,30 +39,17 @@ function RankingPage({
 
             <tbody>
               {ranking.map((entry) => (
-                <tr
-                  key={entry.id}
-                  className={
-                    entry.rank === 1
-                      ? 'ranking-first'
-                      : ''
-                  }
-                >
-                  <td className="ranking-position">
-                    {entry.rank}
-                  </td>
+                <tr key={entry.id} className={entry.rank === 1 ? 'ranking-first' : ''}>
+                  <td className="ranking-position">{entry.rank}</td>
 
-                  <td className="ranking-name">
-                    {entry.name}
-                  </td>
+                  <td className="ranking-name">{entry.name}</td>
 
                   <td>{entry.wins}</td>
 
                   <td>{entry.losses}</td>
 
                   <td className="ranking-points">
-                    {entry.goalAverage > 0
-                      ? `+${entry.goalAverage}`
-                      : entry.goalAverage}
+                    {entry.goalAverage > 0 ? `+${entry.goalAverage}` : entry.goalAverage}
                   </td>
                 </tr>
               ))}
@@ -78,10 +58,7 @@ function RankingPage({
         </div>
 
         <div className="ranking-actions">
-          <button
-            className="ranking-primary-button"
-            onClick={onBackHome}
-          >
+          <button className="ranking-primary-button" onClick={onBackHome}>
             Retour à l'accueil
           </button>
         </div>

@@ -27,3 +27,14 @@ export interface Contest {
 
   currentRound: number
 }
+
+export type ContestConfiguration = Pick<
+  Contest,
+  'name' | 'totalRounds' | 'format' | 'mode'
+>
+
+// État du formulaire, conservé en mémoire avant validation du concours.
+export interface ParticipantsDraft {
+  players: Player[]
+  teams: Team[]
+}
