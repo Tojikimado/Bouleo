@@ -1,309 +1,100 @@
-.open-contest-page {
-  min-height: 100vh;
-  padding: 48px 32px;
-}
-
-.open-contest-content {
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.open-contest-back {
-  padding: 8px 0;
-  margin-bottom: 24px;
-  border: 0;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 0.95rem;
-}
-
-.open-contest-back:hover {
-  color: var(--color-primary);
-}
-
 .open-contest-header-row {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 36px;
+  gap: 20px;
+  margin-bottom: 28px;
 }
-
-.open-contest-header {
-  margin-bottom: 0;
-}
-
-.open-contest-header h1 {
-  margin: 0 0 8px;
-  font-size: 2.5rem;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-}
-
-.open-contest-header p {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: 1rem;
-}
-
 .open-contest-manage-toggle {
-  min-height: 44px;
-  flex-shrink: 0;
-  padding: 0 16px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease;
+  font-size: 13px;
+  border: 0;
+  padding: 5px 0;
+  background: transparent;
+  color: var(--color-text-muted);
 }
-
-.open-contest-manage-toggle:hover {
-  border-color: var(--color-primary);
-}
-
 .open-contest-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 4px;
+  border-top: 1px solid var(--color-border);
 }
-
-.open-contest-list.is-scrollable {
-  max-height: 700px;
-  overflow-y: auto;
-}
-
 .open-contest-card {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 24px;
-  padding: 20px 24px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  padding: 24px 4px;
+  border-bottom: 1px solid var(--color-border);
 }
-
-.open-contest-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgb(0 0 0 / 6%);
-}
-
 .open-contest-card.is-selected {
-  border-color: var(--color-primary);
+  background: var(--color-primary-light);
 }
-
 .open-contest-card-content {
-  min-width: 0;
   flex: 1;
+  min-width: 0;
 }
-
 .open-contest-card h2 {
   margin: 0 0 8px;
-  font-size: 1.15rem;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
-
 .open-contest-details {
-  margin: 0 0 6px;
-  color: var(--color-text);
-  font-size: 0.95rem;
+  margin: 0 0 5px;
+  font-size: 13px;
+  color: var(--color-text-muted);
 }
-
 .open-contest-date {
   margin: 0;
+  font-size: 12px;
   color: var(--color-text-muted);
-  font-size: 0.85rem;
 }
-
 .open-contest-card-actions {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
 }
-
-.open-contest-button {
-  min-height: 44px;
-  flex-shrink: 0;
-  padding: 0 18px;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: #ffffff;
-  font-size: 0.95rem;
-  font-weight: 600;
-  transition:
-    background-color 0.2s ease,
-    transform 0.2s ease;
-}
-
-.open-contest-button:hover {
-  background: var(--color-primary-hover);
-  transform: translateY(-1px);
-}
-
-.open-contest-button:active {
-  transform: translateY(0);
-}
-
 .open-contest-delete {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-text-muted);
-  transition:
-    color 0.2s ease,
-    background-color 0.2s ease,
-    border-color 0.2s ease;
+  padding: 10px;
 }
-
 .open-contest-delete:hover {
-  color: #ef4444;
-  border-color: rgb(239 68 68 / 45%);
-  background: rgb(239 68 68 / 10%);
+  color: var(--color-error);
 }
-
-.open-contest-delete:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
 .open-contest-selection-toolbar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  font-size: 13px;
 }
-
 .open-contest-select-all {
-  padding: 8px 0;
   border: 0;
   background: transparent;
+  padding: 8px 0;
   color: var(--color-primary);
-  font-size: 0.9rem;
-  font-weight: 600;
 }
-
-.open-contest-selection-count {
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-}
-
 .open-contest-delete-selected {
-  min-height: 40px;
   margin-left: auto;
-  padding: 0 14px;
-  border: 1px solid rgb(239 68 68 / 45%);
-  border-radius: var(--radius-md);
-  background: rgb(239 68 68 / 10%);
-  color: #ef4444;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition:
-    background-color 0.2s ease,
-    opacity 0.2s ease;
+  color: var(--color-error);
 }
-
-.open-contest-delete-selected:hover:not(:disabled) {
-  background: rgb(239 68 68 / 18%);
-}
-
-.open-contest-delete-selected:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
-}
-
-.open-contest-checkbox {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  cursor: pointer;
-}
-
 .open-contest-checkbox input {
   width: 18px;
   height: 18px;
-  margin: 0;
-  accent-color: var(--color-primary);
-  cursor: pointer;
 }
-
 .open-contest-empty {
-  padding: 32px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  padding: 40px 20px;
   text-align: center;
   color: var(--color-text-muted);
 }
-
-.open-contest-empty p {
-  margin: 0;
-}
-
 @media (max-width: 700px) {
-  .open-contest-page {
-    padding: 32px 20px;
-  }
-
   .open-contest-header-row {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .open-contest-header h1 {
-    font-size: 2.2rem;
-  }
-
-  .open-contest-manage-toggle {
-    align-self: flex-start;
-  }
-
-  .open-contest-card {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .open-contest-checkbox {
-    align-self: flex-start;
-    padding-top: 4px;
-  }
-
-  .open-contest-card-actions {
-    width: 100%;
-  }
-
-  .open-contest-card-actions .open-contest-button {
-    flex: 1;
-  }
-
-  .open-contest-selection-toolbar {
     align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
   }
-
-  .open-contest-delete-selected {
-    width: 100%;
-    margin-left: 0;
+  .open-contest-card {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .open-contest-card-actions {
+    margin-left: auto;
   }
 }

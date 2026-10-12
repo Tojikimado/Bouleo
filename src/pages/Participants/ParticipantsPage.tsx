@@ -11,6 +11,7 @@ import type {
 import type { Player } from '../../types/player'
 import type { Team } from '../../types/team'
 import { getTeamSize, getMinimumParticipants, MIN_TEAMS } from '../../utils/contestRules'
+import { requiresRegeneration } from '../../utils/updateContest'
 
 interface ParticipantsPageProps {
   contest: Contest | null
@@ -73,16 +74,18 @@ function ParticipantsPage({
 
   function updateTeamPlayer(teamId: string, playerIndex: number, name: string) {
     setTeams((current) =>
-      current.map((team) =>
-        team.id === teamId
-          ? {
-              ...team,
-              players: team.players.map((player, index) =>
-                index === playerIndex ? { ...player, name } : player,
-              ),
-            }
-          : team,
-      ),
+      current.map((team) => {
+        if (team.id !== teamId) {
+          return team
+        }
+        const updatedPlayers = team.players.map((player, index) => {
+          if (index === playerIndex) {
+            return { ...player, name }
+          }
+          return player
+        })
+        return { ...team, players: updatedPlayers }
+      }),
     )
   }
 
@@ -137,12 +140,16 @@ function ParticipantsPage({
 
   const participantCount = mode === 'fixed-teams' ? teams.length : players.length
 
-  const allNamesFilled =
-    mode === 'fixed-teams'
-      ? fixedPlayers.every((player) => player.name.trim() !== '')
-      : players.every((player) => player.name.trim() !== '')
+  const activePlayers = mode === 'fixed-teams' ? fixedPlayers : players
+  const allNamesFilled = activePlayers.every((player) => player.name.trim() !== '')
 
   const canContinue = participantCount >= minimumParticipants && allNamesFilled
+  const regenerate = requiresRegeneration(
+    contest,
+    { name, totalRounds, format, mode },
+    activePlayers,
+    mode === 'fixed-teams' ? teams : [],
+  )
 
   return (
     <main className="participants-page">
@@ -161,14 +168,7 @@ function ParticipantsPage({
 
         {mode === 'fixed-teams' ? (
           <>
-            <div
-              className={`participants-teams-container ${
-                teams.length >=
-                (format === 'tete-a-tete' ? 13 : format === 'doublette' ? 10 : 7)
-                  ? 'is-scrollable'
-                  : ''
-              }`}
-            >
+            <div className="participants-teams-container">
               <div className="participants-grid">
                 {teams.map((team, teamIndex) => (
                   <div className="team-card" key={team.id}>
@@ -190,6 +190,7 @@ function ParticipantsPage({
                         <input
                           key={player.id}
                           type="text"
+                          aria-label={`Joueur ${playerIndex + 1}, équipe ${teamIndex + 1}`}
                           value={player.name}
                           onChange={(event) =>
                             updateTeamPlayer(team.id, playerIndex, event.target.value)
@@ -211,11 +212,12 @@ function ParticipantsPage({
           </>
         ) : (
           <>
-            <div className={`players-list ${players.length >= 8 ? 'is-scrollable' : ''}`}>
+            <div className="players-list">
               {players.map((player, index) => (
                 <div className="player-row" key={player.id}>
                   <input
                     type="text"
+                    aria-label={`Joueur ${index + 1}`}
                     value={player.name}
                     onChange={(event) => updatePlayer(index, event.target.value)}
                     placeholder="Nom du joueur"
@@ -244,13 +246,16 @@ function ParticipantsPage({
           </p>
         )}
 
-        <button
-          className="participants-continue"
-          onClick={handleContinue}
-          disabled={!canContinue}
-        >
-          Continuer →
-        </button>
+        <div className="participants-actions">
+          <span>{activePlayers.length} joueurs inscrits</span>
+          <button
+            className="participants-continue"
+            onClick={handleContinue}
+            disabled={!canContinue}
+          >
+            {regenerate ? 'Générer les parties' : 'Continuer'} →
+          </button>
+        </div>
       </div>
     </main>
   )

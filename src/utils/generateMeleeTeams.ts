@@ -3,6 +3,10 @@ import type { Team } from '../types/team'
 import { assertRoundCount, BYE_TEAM_ID, MIN_TEAMS } from './contestRules'
 import { shuffle } from './shuffle'
 
+// On essaie plusieurs tirages et on garde celui qui répète le moins de rencontres.
+const MAX_ATTEMPTS = 1000
+const TEAMMATE_REPEAT_WEIGHT = 100
+
 interface PairHistory {
   [playerId: string]: {
     [otherPlayerId: string]: number
@@ -112,8 +116,9 @@ export function generateMeleeTeams(
   numberOfRounds: number,
 ): Team[][] {
   assertRoundCount(numberOfRounds)
-  if (players.length < teamSize * MIN_TEAMS)
+  if (players.length < teamSize * MIN_TEAMS) {
     throw new Error('Il faut au moins quatre équipes complètes.')
+  }
 
   const teammateHistory: PairHistory = Object.create(null)
   const opponentHistory: PairHistory = Object.create(null)
@@ -134,17 +139,19 @@ export function generateMeleeTeams(
     let bestTeams: Team[] | null = null
     let bestScore = Infinity
 
-    for (let attempt = 0; attempt < 1000; attempt++) {
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       const candidateTeams = generateCandidateTeams(playingPlayers, teamSize)
       const score =
-        calculateTeammateScore(candidateTeams, teammateHistory) * 100 +
+        calculateTeammateScore(candidateTeams, teammateHistory) * TEAMMATE_REPEAT_WEIGHT +
         calculateOpponentScore(candidateTeams, opponentHistory)
 
       if (score < bestScore) {
         bestTeams = candidateTeams
         bestScore = score
       }
-      if (score === 0) break
+      if (score === 0) {
+        break
+      }
     }
 
     if (!bestTeams) {

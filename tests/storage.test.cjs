@@ -27,6 +27,25 @@ test('serialized saves, reads and deletion preserve ordering', async (t) => {
   assert.equal((await store.list()).contests.length, 0)
 })
 
+test('saved dates are sorted chronologically even with different timezone offsets', async (t) => {
+  const directory = await temporary(t)
+  const store = new ContestStore(directory)
+  const older = createContest(fixture())
+  const newer = createContest(fixture())
+  await fs.writeFile(
+    path.join(directory, `${older.id}.json`),
+    JSON.stringify({ version: 1, savedAt: '2026-10-12T14:00:00+02:00', contest: older }),
+  )
+  await fs.writeFile(
+    path.join(directory, `${newer.id}.json`),
+    JSON.stringify({ version: 1, savedAt: '2026-10-12T12:30:00Z', contest: newer }),
+  )
+  assert.deepEqual(
+    (await store.list()).contests.map((contest) => contest.id),
+    [newer.id, older.id],
+  )
+})
+
 test('save, load and delete reject traversal without touching outside files', async (t) => {
   const store = new ContestStore(await temporary(t))
   const c = createContest(fixture())

@@ -8,10 +8,6 @@
     output: 'release/${version}',
   },
   files: ['dist', 'dist-electron'],
-  mac: {
-    target: ['dmg'],
-    artifactName: '${productName}-Mac-${version}-Installer.${ext}',
-  },
   win: {
     icon: 'public/images/icon.ico',
     target: [
@@ -32,9 +28,5 @@
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
     deleteAppDataOnUninstall: false,
-  },
-  linux: {
-    target: ['AppImage'],
-    artifactName: '${productName}-Linux-${version}.${ext}',
   },
 }

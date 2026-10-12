@@ -3,13 +3,28 @@ import { isScore } from '../utils/contestRules'
 interface ScoreInputProps {
   value: number | null
   onChange: (value: number | null) => void
+  label?: string
+  invalid?: boolean
+  describedBy?: string
+  winner?: boolean
 }
 
-function ScoreInput({ value, onChange }: ScoreInputProps) {
+function ScoreInput({
+  value,
+  onChange,
+  label,
+  invalid,
+  describedBy,
+  winner,
+}: ScoreInputProps) {
   return (
     <input
       type="text"
       inputMode="numeric"
+      aria-label={label}
+      aria-invalid={invalid || undefined}
+      aria-describedby={describedBy}
+      className={winner ? 'score-input score-winner' : 'score-input'}
       value={value === null ? '' : String(value)}
       onChange={(event) => {
         const inputValue = event.target.value
@@ -24,7 +39,9 @@ function ScoreInput({ value, onChange }: ScoreInputProps) {
         }
 
         const score = Number(inputValue)
-        if (isScore(score)) onChange(score)
+        if (isScore(score)) {
+          onChange(score)
+        }
       }}
     />
   )

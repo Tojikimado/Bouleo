@@ -33,7 +33,7 @@ function RankingPage({ contest, onBack, onBackHome }: RankingPageProps) {
                 <th>Nom</th>
                 <th>Victoires</th>
                 <th>Défaites</th>
-                <th>Points</th>
+                <th>Goal-average</th>
               </tr>
             </thead>
 
@@ -57,6 +57,9 @@ function RankingPage({ contest, onBack, onBackHome }: RankingPageProps) {
           </table>
         </div>
 
+        <p className="ranking-note">
+          Classement par victoires, puis goal-average. À égalité, le rang est partagé.
+        </p>
         <div className="ranking-actions">
           <button className="ranking-primary-button" onClick={onBackHome}>
             Retour à l'accueil

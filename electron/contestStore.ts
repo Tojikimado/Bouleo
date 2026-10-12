@@ -14,17 +14,22 @@ export class ContestStore {
 
   private file(id: string): string {
     const target = path.resolve(this.directory, `${id}.json`)
-    if (path.dirname(target) !== path.resolve(this.directory))
+    if (path.dirname(target) !== path.resolve(this.directory)) {
       throw new Error('Chemin de sauvegarde invalide.')
+    }
     return target
   }
 
   private enqueue<T>(id: string, work: () => Promise<T>): Promise<T> {
+    // Pour un même concours : finir l'opération précédente avant de commencer celle-ci.
+    // Une erreur ne bloque pas les nouvelles tentatives.
     const previous = this.queues.get(id) ?? Promise.resolve()
     const task = previous.catch(() => {}).then(work)
     this.queues.set(id, task)
     const cleanup = () => {
-      if (this.queues.get(id) === task) this.queues.delete(id)
+      if (this.queues.get(id) === task) {
+        this.queues.delete(id)
+      }
     }
     void task.then(cleanup, cleanup)
     return task
@@ -41,6 +46,7 @@ export class ContestStore {
     const json = JSON.stringify(saved, null, 2)
     return this.enqueue(value.id, async () => {
       await fs.mkdir(this.directory, { recursive: true })
+      // Remplacer le fichier seulement quand son nouveau contenu est entièrement écrit.
       await fs.writeFile(`${target}.tmp`, json, 'utf8')
       await fs.rename(`${target}.tmp`, target)
       return true
@@ -74,7 +80,9 @@ export class ContestStore {
     const contests: ContestSummary[] = []
     const errors: string[] = []
     for (const entry of entries) {
-      if (!entry.isFile() || !entry.name.endsWith('.json')) continue
+      if (!entry.isFile() || !entry.name.endsWith('.json')) {
+        continue
+      }
       try {
         const id = entry.name.slice(0, -5)
         const { contest, savedAt } = await this.read(id)
@@ -93,12 +101,16 @@ export class ContestStore {
       }
     }
     return {
-      contests: contests.sort((a, b) => b.savedAt.localeCompare(a.savedAt)),
+      contests: contests.sort(
+        (first, second) => Date.parse(second.savedAt) - Date.parse(first.savedAt),
+      ),
       errors,
     }
   }
 
   async flush(): Promise<void> {
-    while (this.queues.size) await Promise.all([...this.queues.values()])
+    while (this.queues.size) {
+      await Promise.all([...this.queues.values()])
+    }
   }
 }

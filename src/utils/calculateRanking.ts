@@ -30,19 +30,28 @@ export function calculateRanking(contest: Contest): RankingEntry[] {
     const ids = fixedTeams ? [team.id] : team.players.map((player) => player.id)
     for (const id of ids) {
       const entry = entries.get(id)
-      if (!entry) continue
+      if (!entry) {
+        continue
+      }
       entry.goalAverage += scored - conceded
-      if (scored > conceded) entry.wins++
-      if (scored < conceded) entry.losses++
+      if (scored > conceded) {
+        entry.wins++
+      }
+      if (scored < conceded) {
+        entry.losses++
+      }
     }
   }
 
   for (const round of contest.rounds) {
     for (const match of round.matches) {
-      if (match.scoreA === null || match.scoreB === null) continue
+      if (match.scoreA === null || match.scoreB === null) {
+        continue
+      }
       addResult(match.teamA, match.scoreA, match.scoreB)
-      if (!isByeMatch(match) && match.teamB)
+      if (!isByeMatch(match) && match.teamB) {
         addResult(match.teamB, match.scoreB, match.scoreA)
+      }
     }
   }
 

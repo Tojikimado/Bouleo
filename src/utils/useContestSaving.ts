@@ -40,7 +40,10 @@ export function useContestSaving(contest: Contest | null) {
   }, [saver])
 
   useLayoutEffect(() => {
-    if (contest) saver.save(contest)
+    // Enregistrer la modification avant que la fenêtre puisse demander à se fermer.
+    if (contest) {
+      saver.save(contest)
+    }
   }, [contest, saver])
 
   return {
@@ -48,6 +51,7 @@ export function useContestSaving(contest: Contest | null) {
     failed: status === 'error',
     flush: () => saver.flush(),
     retry: () => {
+      // Le coordinateur conserve l'erreur et le message affiché ; pas de rejet non géré.
       void saver.flush().catch(() => {})
     },
   }

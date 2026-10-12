@@ -1,4 +1,4 @@
-﻿import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -11,18 +11,22 @@ const rendererDirectory = path.join(appRoot, 'dist')
 const publicDirectory = devServerUrl ? path.join(appRoot, 'public') : rendererDirectory
 
 const store = new ContestStore(path.join(app.getPath('userData'), 'contests'))
-let win: BrowserWindow | null = null
+let mainWindow: BrowserWindow | null = null
 let closeAllowed = false
 let rendererReady = false
 let closeToken: string | null = null
 let closeTimer: ReturnType<typeof setTimeout> | undefined
 
 async function closeFailed(message: string) {
-  if (!win || win.isDestroyed()) return
-  if (closeTimer) clearTimeout(closeTimer)
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return
+  }
+  if (closeTimer) {
+    clearTimeout(closeTimer)
+  }
   closeToken = null
-  win.setEnabled(true)
-  const result = await dialog.showMessageBox(win, {
+  mainWindow.setEnabled(true)
+  const result = await dialog.showMessageBox(mainWindow, {
     type: 'warning',
     title: 'Sauvegarde de Bouleo',
     message,
@@ -34,12 +38,12 @@ async function closeFailed(message: string) {
   })
   if (result.response === 1) {
     closeAllowed = true
-    win.close()
+    mainWindow.close()
   }
 }
 
 function createWindow() {
-  win = new BrowserWindow({
+  const window = new BrowserWindow({
     title: 'Bouleo',
     icon: path.join(publicDirectory, 'images', 'icon.ico'),
     webPreferences: {
@@ -48,85 +52,114 @@ function createWindow() {
       nodeIntegration: false,
     },
   })
-  win.maximize()
-  win.on('close', (event) => {
-    if (closeAllowed) return
+  mainWindow = window
+  window.maximize()
+  window.on('close', (event) => {
+    if (closeAllowed) {
+      return
+    }
     event.preventDefault()
-    if (closeToken) return
-    if (!rendererReady || win!.webContents.isCrashed()) {
+    if (closeToken) {
+      return
+    }
+    if (!rendererReady || window.webContents.isCrashed()) {
       void closeFailed('L’interface ne peut pas confirmer la sauvegarde.')
       return
     }
     closeToken = randomUUID()
-    win!.setEnabled(false)
-    win!.webContents.send('prepare-close', closeToken)
+    // Demander à React d'envoyer toutes ses modifications avant de fermer Electron.
+    window.setEnabled(false)
+    window.webContents.send('prepare-close', closeToken)
     closeTimer = setTimeout(() => {
       void closeFailed('La sauvegarde ne répond pas.')
     }, 30000)
   })
-  win.on('closed', () => {
-    win = null
+  window.on('closed', () => {
+    mainWindow = null
     rendererReady = false
   })
-  if (devServerUrl) void win.loadURL(devServerUrl)
-  else void win.loadFile(path.join(rendererDirectory, 'index.html'))
+  if (devServerUrl) {
+    void window.loadURL(devServerUrl)
+  } else {
+    void window.loadFile(path.join(rendererDirectory, 'index.html'))
+  }
 }
 
 if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
   app.on('second-instance', () => {
-    if (win) {
-      if (win.isMinimized()) win.restore()
-      win.show()
-      win.focus()
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore()
+      }
+      mainWindow.show()
+      mainWindow.focus()
     }
   })
   app.on('before-quit', (event) => {
-    if (win && !closeAllowed) {
+    if (mainWindow && !closeAllowed) {
       event.preventDefault()
-      win.close()
+      mainWindow.close()
     }
   })
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit()
+    if (process.platform !== 'darwin') {
+      app.quit()
+    }
   })
   app.on('activate', () => {
-    if (!win) {
+    if (!mainWindow) {
       closeAllowed = false
       createWindow()
     }
   })
 
   ipcMain.on('renderer-ready', (event) => {
-    if (event.sender === win?.webContents) rendererReady = true
+    if (event.sender === mainWindow?.webContents) {
+      rendererReady = true
+    }
   })
   ipcMain.on('finish-close', async (event, token: unknown, success: unknown) => {
-    if (event.sender !== win?.webContents || token !== closeToken || !closeToken) return
-    if (closeTimer) clearTimeout(closeTimer)
+    if (event.sender !== mainWindow?.webContents || token !== closeToken || !closeToken) {
+      return
+    }
+    if (closeTimer) {
+      clearTimeout(closeTimer)
+    }
     try {
-      if (success !== true) throw new Error('Des modifications ne sont pas enregistrées.')
+      if (success !== true) {
+        throw new Error('Des modifications ne sont pas enregistrées.')
+      }
       await store.flush()
       closeAllowed = true
-      win?.close()
+      mainWindow?.close()
     } catch {
       await closeFailed('Impossible d’enregistrer toutes les modifications.')
     }
   })
   ipcMain.handle('save-contest', (event, contest: unknown) => {
-    if (event.sender !== win?.webContents) throw new Error('Fenêtre non autorisée.')
+    if (event.sender !== mainWindow?.webContents) {
+      throw new Error('Fenêtre non autorisée.')
+    }
     return store.save(contest)
   })
   ipcMain.handle('load-contest', (event, id: unknown) => {
-    if (event.sender !== win?.webContents) throw new Error('Fenêtre non autorisée.')
+    if (event.sender !== mainWindow?.webContents) {
+      throw new Error('Fenêtre non autorisée.')
+    }
     return store.load(id)
   })
   ipcMain.handle('delete-contest', (event, id: unknown) => {
-    if (event.sender !== win?.webContents) throw new Error('Fenêtre non autorisée.')
+    if (event.sender !== mainWindow?.webContents) {
+      throw new Error('Fenêtre non autorisée.')
+    }
     return store.delete(id)
   })
   ipcMain.handle('list-contests', (event) => {
-    if (event.sender !== win?.webContents) throw new Error('Fenêtre non autorisée.')
+    if (event.sender !== mainWindow?.webContents) {
+      throw new Error('Fenêtre non autorisée.')
+    }
     return store.list()
   })
   void app.whenReady().then(createWindow)

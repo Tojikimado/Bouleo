@@ -26,7 +26,11 @@ export function generateFixedTeams(teams: Team[], numberOfRounds: number): Team[
     const currentTeams = [...rotatingTeams]
 
     for (let i = 0; i < roundNumber % (rotationSize - 1); i++) {
-      currentTeams.splice(1, 0, currentTeams.pop()!)
+      // La première équipe reste en place ; la dernière passe en deuxième position.
+      const lastTeam = currentTeams.pop()
+      if (lastTeam) {
+        currentTeams.splice(1, 0, lastTeam)
+      }
     }
 
     const roundTeams: Team[] = []

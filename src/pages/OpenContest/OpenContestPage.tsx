@@ -23,25 +23,24 @@ function OpenContestPage({ onBack, onOpenContest }: OpenContestPageProps) {
   const [loadError, setLoadError] = useState('')
   const [warnings, setWarnings] = useState<string[]>([])
 
-  function reload() {
+  async function reload() {
     setIsLoading(true)
     setLoadError('')
-    void window.bouleo
-      .listContests()
-      .then((result) => {
-        setContests(result.contests)
-        setWarnings(result.errors)
-      })
-      .catch(() =>
-        setLoadError(
-          'Impossible de lire les concours sauvegardés. Vérifiez l’accès au dossier puis réessayez.',
-        ),
+    try {
+      const result = await window.bouleo.listContests()
+      setContests(result.contests)
+      setWarnings(result.errors)
+    } catch {
+      setLoadError(
+        'Impossible de lire les concours sauvegardés. Vérifiez l’accès au dossier puis réessayez.',
       )
-      .finally(() => setIsLoading(false))
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   useEffect(() => {
-    reload()
+    void reload()
   }, [])
 
   const allSelected =
@@ -85,26 +84,18 @@ function OpenContestPage({ onBack, onOpenContest }: OpenContestPageProps) {
     setDeleteError('')
 
     try {
-      const results = await Promise.allSettled(
-        contestsToDelete.map((contest) => window.bouleo.deleteContest(contest.id)),
-      )
-
       const deletedIds = new Set<string>()
       const failedContests: ContestSummary[] = []
-
-      results.forEach((result, index) => {
-        const contest = contestsToDelete[index]
-
-        if (result.status === 'fulfilled') {
+      // Un fichier inaccessible ne doit pas empêcher de traiter les suivants.
+      for (const contest of contestsToDelete) {
+        try {
+          await window.bouleo.deleteContest(contest.id)
           deletedIds.add(contest.id)
-        } else {
+        } catch (error) {
           failedContests.push(contest)
-          console.error(
-            `Impossible de supprimer le concours ${contest.name} :`,
-            result.reason,
-          )
+          console.error(`Impossible de supprimer le concours ${contest.name} :`, error)
         }
-      })
+      }
 
       if (deletedIds.size > 0) {
         setContests((current) => current.filter((contest) => !deletedIds.has(contest.id)))
@@ -141,11 +132,26 @@ function OpenContestPage({ onBack, onOpenContest }: OpenContestPageProps) {
     setDeleteError('')
   }
 
-  const deleteMessage = contestsToDelete
-    ? contestsToDelete.length === 1
-      ? `Le concours « ${contestsToDelete[0].name} » et ses scores seront définitivement supprimés. Cette action est irréversible.`
-      : `${contestsToDelete.length} concours et leurs scores seront définitivement supprimés. Cette action est irréversible.`
-    : ''
+  async function handleOpenContest(id: string) {
+    setLoadError('')
+    try {
+      const loadedContest = await window.bouleo.loadContest(id)
+      onOpenContest(loadedContest)
+    } catch (error) {
+      setLoadError(
+        'Impossible d’ouvrir ce concours : sa sauvegarde est inaccessible ou incompatible.',
+      )
+      console.error('Impossible d’ouvrir le concours :', error)
+    }
+  }
+
+  let deleteMessage = ''
+  if (contestsToDelete?.length === 1) {
+    deleteMessage = `Le concours « ${contestsToDelete[0].name} » et ses scores seront définitivement supprimés. Cette action est irréversible.`
+  } else if (contestsToDelete) {
+    deleteMessage = `${contestsToDelete.length} concours et leurs scores seront définitivement supprimés. Cette action est irréversible.`
+  }
+  const confirmationMessage = [deleteError, deleteMessage].filter(Boolean).join(' ')
 
   return (
     <main className="open-contest-page">
@@ -181,9 +187,8 @@ function OpenContestPage({ onBack, onOpenContest }: OpenContestPageProps) {
             {warning}
           </p>
         ))}
-        {isLoading ? (
-          <p role="status">Chargement…</p>
-        ) : contests.length === 0 ? (
+        {isLoading && <p role="status">Chargement…</p>}
+        {!isLoading && contests.length === 0 && (
           <div className="open-contest-empty">
             {!loadError && (
               <p>
@@ -193,7 +198,8 @@ function OpenContestPage({ onBack, onOpenContest }: OpenContestPageProps) {
               </p>
             )}
           </div>
-        ) : (
+        )}
+        {!isLoading && contests.length > 0 && (
           <>
             {isManaging && (
               <div className="open-contest-selection-toolbar">
@@ -225,9 +231,7 @@ function OpenContestPage({ onBack, onOpenContest }: OpenContestPageProps) {
               </div>
             )}
 
-            <div
-              className={`open-contest-list${contests.length >= 5 ? ' is-scrollable' : ''}`}
-            >
+            <div className="open-contest-list">
               {contests.map((contest) => {
                 const isSelected = selectedIds.includes(contest.id)
 
@@ -269,20 +273,7 @@ function OpenContestPage({ onBack, onOpenContest }: OpenContestPageProps) {
                       <button
                         className="open-contest-button"
                         type="button"
-                        onClick={async () => {
-                          try {
-                            const loadedContest = await window.bouleo.loadContest(
-                              contest.id,
-                            )
-
-                            onOpenContest(loadedContest)
-                          } catch (error) {
-                            setLoadError(
-                              'Impossible d’ouvrir ce concours : sa sauvegarde est inaccessible ou incompatible.',
-                            )
-                            console.error('Impossible d’ouvrir le concours :', error)
-                          }
-                        }}
+                        onClick={() => handleOpenContest(contest.id)}
                       >
                         Ouvrir →
                       </button>
@@ -329,7 +320,7 @@ function OpenContestPage({ onBack, onOpenContest }: OpenContestPageProps) {
             ? `Supprimer ${contestsToDelete.length} concours ?`
             : 'Supprimer ce concours ?'
         }
-        message={`${deleteError ? `${deleteError} ` : ''}${deleteMessage}`}
+        message={confirmationMessage}
         confirmLabel={isDeleting ? 'Suppression…' : 'Supprimer'}
         cancelLabel="Annuler"
         onConfirm={handleDeleteContests}

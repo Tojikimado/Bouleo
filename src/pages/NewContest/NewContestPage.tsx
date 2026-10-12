@@ -41,6 +41,9 @@ function NewContestPage({ contest, onBack, onContinue }: NewContestPageProps) {
         </button>
 
         <h1>Nouveau concours</h1>
+        <p className="new-contest-description">
+          Choisissez le format et le déroulement de votre concours.
+        </p>
 
         <div className="new-contest-form">
           <div className="new-contest-field">
@@ -56,7 +59,7 @@ function NewContestPage({ contest, onBack, onContinue }: NewContestPageProps) {
           </div>
 
           <div className="new-contest-field">
-            <label htmlFor="total-rounds">Nombre de parties</label>
+            <label htmlFor="total-rounds">Parties</label>
 
             <input
               id="total-rounds"
@@ -82,7 +85,9 @@ function NewContestPage({ contest, onBack, onContinue }: NewContestPageProps) {
             <h2>Format</h2>
 
             <div className="new-contest-options">
-              <label className="new-contest-option">
+              <label
+                className={`new-contest-option ${format === 'tete-a-tete' ? 'is-selected' : ''}`}
+              >
                 <input
                   type="radio"
                   name="format"
@@ -93,7 +98,9 @@ function NewContestPage({ contest, onBack, onContinue }: NewContestPageProps) {
                 <span>Tête-à-tête</span>
               </label>
 
-              <label className="new-contest-option">
+              <label
+                className={`new-contest-option ${format === 'doublette' ? 'is-selected' : ''}`}
+              >
                 <input
                   type="radio"
                   name="format"
@@ -104,7 +111,9 @@ function NewContestPage({ contest, onBack, onContinue }: NewContestPageProps) {
                 <span>Doublette</span>
               </label>
 
-              <label className="new-contest-option">
+              <label
+                className={`new-contest-option ${format === 'triplette' ? 'is-selected' : ''}`}
+              >
                 <input
                   type="radio"
                   name="format"
@@ -118,10 +127,12 @@ function NewContestPage({ contest, onBack, onContinue }: NewContestPageProps) {
           </div>
 
           <div className="new-contest-section">
-            <h2>Mode</h2>
+            <h2>Composition des équipes</h2>
 
-            <div className="new-contest-options">
-              <label className="new-contest-option">
+            <div className="new-contest-options mode-options">
+              <label
+                className={`new-contest-option ${mode === 'fixed-teams' ? 'is-selected' : ''}`}
+              >
                 <input
                   type="radio"
                   name="mode"
@@ -129,10 +140,15 @@ function NewContestPage({ contest, onBack, onContinue }: NewContestPageProps) {
                   onChange={() => setMode('fixed-teams')}
                 />
 
-                <span>Équipes fixes</span>
+                <span>
+                  Équipes fixes
+                  <small>Les mêmes partenaires tout au long du concours.</small>
+                </span>
               </label>
 
-              <label className="new-contest-option">
+              <label
+                className={`new-contest-option ${mode === 'melee-demelee' ? 'is-selected' : ''}`}
+              >
                 <input
                   type="radio"
                   name="mode"
@@ -140,11 +156,15 @@ function NewContestPage({ contest, onBack, onContinue }: NewContestPageProps) {
                   onChange={() => setMode('melee-demelee')}
                 />
 
-                <span>Mêlée-démêlée</span>
+                <span>
+                  Mêlée-démêlée<small>De nouveaux partenaires à chaque partie.</small>
+                </span>
               </label>
             </div>
           </div>
-
+        </div>
+        <div className="new-contest-actions">
+          <span>Ensuite : les participants</span>
           <button
             className="new-contest-continue"
             onClick={handleContinue}

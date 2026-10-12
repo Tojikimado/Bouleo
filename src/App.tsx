@@ -47,7 +47,9 @@ function App() {
   const activeConfiguration = configuration ?? contest
 
   function handleNewContest() {
-    if (saving.failed) return
+    if (saving.failed) {
+      return
+    }
     setContest(null)
     setConfiguration(null)
     setParticipantsDraft(null)
@@ -77,7 +79,9 @@ function App() {
 
   function handleParticipants(players: Player[], teams: Team[]) {
     const config = configuration ?? contest
-    if (!config) return
+    if (!config) {
+      return
+    }
     try {
       const regenerate = requiresRegeneration(contest, config, players, teams)
       const next = updateContest(contest, config, players, teams)
@@ -138,6 +142,10 @@ function App() {
 
   return (
     <div className="app">
+      <header className="app-header">
+        <span className="app-brand">Bouleo</span>
+        <span>Gestion de concours de pétanque</span>
+      </header>
       {saving.status && (
         <div className="save-status" role={saving.failed ? 'alert' : 'status'}>
           {saving.status}
@@ -148,7 +156,11 @@ function App() {
           )}
         </div>
       )}
-      {editError && <p role="alert">{editError}</p>}
+      {editError && (
+        <p className="edit-error" role="alert">
+          {editError}
+        </p>
+      )}
       {page === 'new-contest' && (
         <NewContestPage
           contest={activeConfiguration}
@@ -200,6 +212,10 @@ function App() {
         <OpenContestPage onBack={goHome} onOpenContest={openContest} />
       )}
 
+      <footer className="app-footer">
+        <span>Pétanque sportive Saint-Porquier</span>
+        <span>Vos concours sont enregistrés sur cet ordinateur</span>
+      </footer>
       <ConfirmModal
         open={pendingContest !== null}
         title="Régénérer les parties ?"
@@ -207,7 +223,9 @@ function App() {
         confirmLabel="Continuer"
         cancelLabel="Annuler"
         onConfirm={() => {
-          if (pendingContest) commitContest(pendingContest)
+          if (pendingContest) {
+            commitContest(pendingContest)
+          }
         }}
         onCancel={() => setPendingContest(null)}
       />

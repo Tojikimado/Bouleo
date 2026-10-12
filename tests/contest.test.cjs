@@ -7,6 +7,130 @@ const { updateContest, requiresRegeneration } = load('src/utils/updateContest.ts
 const { assertContest, parseSavedContest } = load('src/utils/contestValidation.ts')
 const { calculateRanking } = load('src/utils/calculateRanking.ts')
 
+test('deleting several saved contests retains failures and retries only those files', async (t) => {
+  const h = hookHarness()
+  const component = loader({
+    react: { ...h.react, useEffect() {} },
+    '../../components/ConfirmModal/ConfirmModal': { __esModule: true, default: 'Modal' },
+  })('src/pages/OpenContest/OpenContestPage.tsx').default
+  const previousWindow = global.window
+  t.after(() => {
+    global.window = previousWindow
+  })
+  const deleted = []
+  let failSecond = true
+  global.window = {
+    bouleo: {
+      async deleteContest(id) {
+        deleted.push(id)
+        if (id === 'second' && failSecond) throw new Error('File unavailable')
+        return true
+      },
+    },
+  }
+  const render = () => {
+    h.reset()
+    return component({ onBack() {}, onOpenContest() {} })
+  }
+  render()
+  // Simuler une liste chargée. Les autres actions passent par les boutons du composant.
+  h.state[0] = [
+    { id: 'first', name: 'Premier' },
+    { id: 'second', name: 'Deuxième' },
+  ]
+  h.state[6] = false
+  find(
+    render(),
+    (e) => e.props?.className === 'open-contest-manage-toggle',
+  ).props.onClick()
+  find(render(), (e) => e.props?.className === 'open-contest-select-all').props.onClick()
+  find(
+    render(),
+    (e) => e.props?.className === 'open-contest-delete-selected',
+  ).props.onClick()
+  await find(render(), (e) => e.type === 'Modal').props.onConfirm()
+  assert.deepEqual(
+    h.state[0].map((contest) => contest.id),
+    ['second'],
+  )
+  assert.match(find(render(), (e) => e.type === 'Modal').props.message, /1 suppression/)
+  failSecond = false
+  await find(render(), (e) => e.type === 'Modal').props.onConfirm()
+  assert.deepEqual(deleted, ['first', 'second', 'second'])
+  assert.equal(h.state[0].length, 0)
+  assert.equal(find(render(), (e) => e.type === 'Modal').props.open, false)
+})
+
+test('participant action preserves existing rounds unless configuration or membership changes', () => {
+  for (const mode of ['fixed-teams', 'melee-demelee']) {
+    const h = hookHarness()
+    const component = loader({ react: h.react })(
+      'src/pages/Participants/ParticipantsPage.tsx',
+    ).default
+    const contest = createContest(fixture(6, mode))
+    const props = { ...contest, contest }
+    const render = () => {
+      h.reset()
+      return component(props)
+    }
+    const action = () =>
+      find(
+        render(),
+        (e) => e.props?.className === 'participants-continue',
+      ).props.children.join('')
+    assert.match(action(), /^Continuer/)
+    find(render(), (e) => e.type === 'input').props.onChange({
+      target: { value: 'Renamed' },
+    })
+    assert.match(action(), /^Continuer/)
+    props.totalRounds++
+    assert.match(action(), /^Générer/)
+    props.totalRounds--
+    assert.match(action(), /^Continuer/)
+    find(
+      render(),
+      (e) =>
+        e.props?.className ===
+        (mode === 'fixed-teams' ? 'team-remove-button' : 'player-remove-button'),
+    ).props.onClick()
+    assert.match(action(), /^Générer/)
+    props.contest = null
+    assert.match(action(), /^Générer/)
+  }
+})
+
+test('score errors wait for both values and disappear after correction', () => {
+  const component = load('src/pages/Contest/ContestPage.tsx').default
+  const contest = createContest(fixture())
+  const match = contest.rounds[0].matches[0]
+  const render = () => component({ contest })
+  assert.equal(
+    find(render(), (e) => e.props?.className === 'match-error'),
+    undefined,
+  )
+  match.scoreA = 8
+  assert.equal(
+    find(render(), (e) => e.props?.className === 'match-error'),
+    undefined,
+  )
+  match.scoreB = 9
+  assert.equal(
+    find(render(), (e) => e.props?.className === 'match-error').props.role,
+    'alert',
+  )
+  assert.equal(
+    find(render(), (e) => e.props?.invalid === true).props.describedBy,
+    `match-status-${match.id}`,
+  )
+  match.scoreA = 13
+  assert.equal(
+    find(render(), (e) => e.props?.className === 'match-error'),
+    undefined,
+  )
+  match.scoreB = 13
+  assert.ok(find(render(), (e) => e.props?.className === 'match-error'))
+})
+
 test('reject fractional, infinite and excessive round counts', () => {
   for (const value of [0, -1, 1.5, Infinity, NaN, 101])
     assert.throws(() => createContest({ ...fixture(), totalRounds: value }))

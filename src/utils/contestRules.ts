@@ -52,7 +52,9 @@ export function isByeMatch(match: Pick<Match, 'teamB' | 'isBye'>): boolean {
 
 export function isMatchComplete(match: Match): boolean {
   const { scoreA, scoreB } = match
-  if (isByeMatch(match)) return scoreA === BYE_SCORE.winner && scoreB === BYE_SCORE.loser
+  if (isByeMatch(match)) {
+    return scoreA === BYE_SCORE.winner && scoreB === BYE_SCORE.loser
+  }
   return (
     isScore(scoreA) &&
     isScore(scoreB) &&

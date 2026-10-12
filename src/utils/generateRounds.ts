@@ -15,7 +15,9 @@ export function generateRounds(teamsByRound: Team[][]): Round[] {
       const firstTeam = teams[i]
       const secondTeam = teams[i + 1]
 
-      if (!firstTeam) continue
+      if (!firstTeam) {
+        continue
+      }
 
       const firstIsBye = isByeTeam(firstTeam)
       const secondIsBye = isByeTeam(secondTeam)
@@ -27,7 +29,9 @@ export function generateRounds(teamsByRound: Team[][]): Round[] {
       if (firstIsBye || secondIsBye) {
         const restingTeam = firstIsBye ? secondTeam : firstTeam
 
-        if (!restingTeam || isByeTeam(restingTeam)) continue
+        if (!restingTeam || isByeTeam(restingTeam)) {
+          continue
+        }
 
         matches.push({
           id: crypto.randomUUID(),
@@ -41,7 +45,9 @@ export function generateRounds(teamsByRound: Team[][]): Round[] {
         continue
       }
 
-      if (!secondTeam) continue
+      if (!secondTeam) {
+        continue
+      }
 
       matches.push({
         id: crypto.randomUUID(),
