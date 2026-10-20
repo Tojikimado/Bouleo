@@ -13,6 +13,29 @@ hors ligne, sans compte ni base de données.
 - Classement par victoires, puis goal-average, avec gestion des ex æquo.
 - Sauvegarde automatique et reprise des concours.
 
+## Installation
+
+Téléchargez l’installateur `Bouleo-Windows-<version>-Setup.exe` depuis les
+[releases GitHub](https://github.com/Tojikimado/Bouleo/releases).
+
+Lancez le fichier téléchargé, suivez les étapes d’installation,
+puis ouvrez Bouleo depuis le raccourci créé sur le bureau ou dans le menu Démarrer.
+L’application est prévue pour Windows 64 bits ; Node.js n’est pas nécessaire pour l’utiliser.
+
+L’installateur n’est pas signé : Windows peut afficher un avertissement.
+Utilisez uniquement un installateur fourni par une personne de confiance.
+
+## Sauvegardes
+
+Une fois les parties générées, les concours et leurs scores sont enregistrés
+automatiquement sur l’ordinateur. Utilisez **Ouvrir un concours** pour les reprendre.
+Les formulaires non validés ne sont pas sauvegardés.
+
+Les fichiers JSON se trouvent dans le dossier `contests` du répertoire de données
+de Bouleo, généralement `%APPDATA%\Bouleo\contests`.
+Pour en conserver une copie ou les transférer sur un autre PC, fermez Bouleo
+puis copiez ce dossier. La désinstallation conserve les sauvegardes.
+
 ## Développement
 
 Prérequis : Node.js et npm.
@@ -43,11 +66,3 @@ npm run build:win
 
 L'installateur est généré dans `release/<version>/`.
 Pour compiler sans créer d'installateur : `npm run build`.
-
-L'installateur n'est pas signé pour le moment.
-
-## Sauvegardes
-
-Les concours sont enregistrés en JSON dans le dossier `contests` du répertoire
-Electron `userData`, généralement `%APPDATA%\Bouleo\contests` pour l'application
-installée. Ils sont conservés séparément des fichiers du programme.
